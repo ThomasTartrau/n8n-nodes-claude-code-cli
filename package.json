@@ -1,6 +1,6 @@
 {
 	"name": "n8n-nodes-claude-code-cli",
-	"version": "1.0.1",
+	"version": "1.0.2",
 	"description": "n8n community node for Claude Code CLI integration - execute AI-assisted coding tasks",
 	"keywords": [
 		"n8n-community-node-package",

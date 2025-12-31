@@ -1,3 +1,10 @@
+## [1.0.2](https://github.com/ThomasTartrau/n8n-nodes-claude-code-cli/compare/v1.0.1...v1.0.2) (2025-12-31)
+
+
+### Bug Fixes
+
+* use lodash template syntax for semantic-release-replace-plugin ([041225f](https://github.com/ThomasTartrau/n8n-nodes-claude-code-cli/commit/041225f4a5179bc40fb394077257ef5f8a5d1592))
+
 ## [1.0.1](https://github.com/ThomasTartrau/n8n-nodes-claude-code-cli/compare/v1.0.0...v1.0.1) (2025-12-31)
 
 
