@@ -13,6 +13,8 @@
 
 # n8n-nodes-claude-code-cli
 
+[![CI](https://img.shields.io/github/actions/workflow/status/ThomasTartrau/n8n-nodes-claude-code-cli/ci.yml?style=for-the-badge&logo=github&label=CI)](https://github.com/ThomasTartrau/n8n-nodes-claude-code-cli/actions/workflows/ci.yml)
+[![npm](https://img.shields.io/npm/v/n8n-nodes-claude-code-cli?style=for-the-badge&logo=npm&logoColor=white)](https://www.npmjs.com/package/n8n-nodes-claude-code-cli)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge)](https://opensource.org/licenses/MIT)
 [![n8n](https://img.shields.io/badge/n8n-community_node-FF6D5A?style=for-the-badge&logo=n8n&logoColor=white)](https://n8n.io)
 
@@ -593,7 +595,7 @@ MIT License - see [LICENSE](LICENSE) for details.
 <div align="center">
 
 **[GitHub](https://github.com/ThomasTartrau/n8n-nodes-claude-code-cli)** •
-<!-- **[npm](https://www.npmjs.com/package/n8n-nodes-claude-code-cli)** • -->
+**[npm](https://www.npmjs.com/package/n8n-nodes-claude-code-cli)** •
 **[n8n Community](https://community.n8n.io/)**
 
 ---
