@@ -93,7 +93,8 @@ export class SshExecutor implements IClaudeCodeExecutor {
 			}, timeoutMs);
 
 			conn.on("ready", () => {
-				conn.exec(remoteCmd, (err, stream) => {
+				// Explicitly disable PTY allocation for non-interactive execution
+				conn.exec(remoteCmd, { pty: false }, (err, stream) => {
 					if (err) {
 						clearTimeout(connectionTimeout);
 						connectionClosed = true;
@@ -105,29 +106,46 @@ export class SshExecutor implements IClaudeCodeExecutor {
 						return;
 					}
 
-					stream.on("close", (code: number) => {
-						clearTimeout(connectionTimeout);
-						if (!connectionClosed) {
+					let exitCode: number | null = null;
+					let streamClosed = false;
+
+					const handleCompletion = () => {
+						if (streamClosed && exitCode !== null && !connectionClosed) {
+							clearTimeout(connectionTimeout);
 							connectionClosed = true;
 							conn.end();
 
 							const duration = Date.now() - startTime;
-							const exitCode = code ?? 0;
+							const code = exitCode ?? 0;
 
 							if (options.outputFormat === "json") {
 								const parsed = parseJsonOutput(stdout);
-								resolve(normalizeOutput(parsed, exitCode, duration, stderr));
+								resolve(normalizeOutput(parsed, code, duration, stderr));
 							} else {
 								resolve({
-									success: exitCode === 0,
+									success: code === 0,
 									sessionId: "",
 									output: stdout,
-									exitCode,
+									exitCode: code,
 									duration,
-									error: exitCode !== 0 ? stderr : undefined,
+									error: code !== 0 ? stderr : undefined,
 								});
 							}
 						}
+					};
+
+					stream.on("exit", (code: number) => {
+						exitCode = code ?? 0;
+						handleCompletion();
+					});
+
+					stream.on("close", () => {
+						streamClosed = true;
+						// If exit wasn't received, use 0 as default
+						if (exitCode === null) {
+							exitCode = 0;
+						}
+						handleCompletion();
 					});
 
 					stream.on("data", (data: Buffer) => {
@@ -138,8 +156,8 @@ export class SshExecutor implements IClaudeCodeExecutor {
 						stderr += data.toString();
 					});
 
-					// Close stdin to signal no input will be sent
-					// This prevents the remote process from waiting for input
+					// Close stdin immediately to signal no input will be sent
+					// This is critical for non-interactive commands like Claude Code with -p flag
 					stream.end();
 				});
 			});
@@ -182,7 +200,8 @@ export class SshExecutor implements IClaudeCodeExecutor {
 
 			conn.on("ready", () => {
 				const claudePath = this.credentials.claudePath || "claude";
-				conn.exec(`${claudePath} --version`, (err, stream) => {
+				// Explicitly disable PTY allocation
+				conn.exec(`${claudePath} --version`, { pty: false }, (err, stream) => {
 					if (err) {
 						clearTimeout(timeout);
 						if (!resolved) {
@@ -193,7 +212,7 @@ export class SshExecutor implements IClaudeCodeExecutor {
 						return;
 					}
 
-					stream.on("close", (code: number) => {
+					stream.on("exit", (code: number) => {
 						clearTimeout(timeout);
 						if (!resolved) {
 							resolved = true;
@@ -202,7 +221,16 @@ export class SshExecutor implements IClaudeCodeExecutor {
 						}
 					});
 
-					// Close stdin to signal no input will be sent
+					stream.on("close", () => {
+						clearTimeout(timeout);
+						if (!resolved) {
+							resolved = true;
+							conn.end();
+							resolve(true); // Assume success if close without exit
+						}
+					});
+
+					// Close stdin immediately
 					stream.end();
 				});
 			});
