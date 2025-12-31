@@ -1,3 +1,10 @@
+## [1.0.6](https://github.com/ThomasTartrau/n8n-nodes-claude-code-cli/compare/v1.0.5...v1.0.6) (2025-12-31)
+
+
+### Bug Fixes
+
+* enhance SSH key normalization for corrupted formats ([9e0eecb](https://github.com/ThomasTartrau/n8n-nodes-claude-code-cli/commit/9e0eecb94d11e24a180c4015585970aed7e7488f))
+
 ## [1.0.5](https://github.com/ThomasTartrau/n8n-nodes-claude-code-cli/compare/v1.0.4...v1.0.5) (2025-12-31)
 
 
