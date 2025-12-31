@@ -1,0 +1,41 @@
+services:
+  n8n:
+    build: .
+    user: root
+    ports:
+      - "5678:5678"
+    volumes:
+      - n8n_data:/home/node/.n8n
+      - ./dist:/home/node/.n8n/custom/n8n-nodes-claude-code-cli
+      - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      - N8N_CUSTOM_EXTENSIONS=/home/node/.n8n/custom
+    restart: unless-stopped
+
+  claude-code:
+    image: debian:trixie-slim
+    container_name: claude-code-runner
+    volumes:
+      - claude_data:/root
+      - ./workspace:/workspace
+    working_dir: /workspace
+    environment:
+      - HOME=/root
+    command: >
+      bash -c "
+        apt-get update &&
+        apt-get install -y curl &&
+        curl -fsSL https://deb.nodesource.com/setup_24.x | bash - &&
+        apt-get install -y nodejs &&
+        npm install -g @anthropic-ai/claude-code &&
+        tail -f /dev/null
+      "
+    tty: true
+    stdin_open: true
+    restart: unless-stopped
+
+volumes:
+  n8n_data:
+    name: n8n_data
+  claude_data:
+    name: claude_data

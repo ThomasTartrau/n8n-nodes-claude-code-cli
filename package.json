@@ -1,0 +1,75 @@
+{
+	"name": "n8n-nodes-claude-code-cli",
+	"version": "1.2.0",
+	"description": "n8n community node for Claude Code CLI integration - execute AI-assisted coding tasks",
+	"keywords": [
+		"n8n-community-node-package",
+		"claude",
+		"claude-code",
+		"ai",
+		"automation",
+		"anthropic",
+		"coding",
+		"development"
+	],
+	"license": "MIT",
+	"homepage": "https://github.com/ThomasTartrau/n8n-nodes-claude-code-cli",
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/ThomasTartrau/n8n-nodes-claude-code-cli.git"
+	},
+	"main": "dist/index.js",
+	"scripts": {
+		"build": "tsc && npm run copy:icons",
+		"copy:icons": "cp -r icons dist/",
+		"dev": "tsc --watch",
+		"lint": "biome check .",
+		"format": "biome format --write .",
+		"check": "biome format .",
+		"typecheck": "tsc --noEmit",
+		"test": "vitest run tests/utils",
+		"test:watch": "vitest",
+		"test:coverage": "vitest run --coverage",
+		"test:integration": "vitest run tests/integration",
+		"test:all": "vitest run",
+		"prepublishOnly": "npm run build"
+	},
+	"files": [
+		"dist"
+	],
+	"n8n": {
+		"n8nNodesApiVersion": 1,
+		"credentials": [
+			"dist/credentials/ClaudeCodeLocalApi.credentials.js",
+			"dist/credentials/ClaudeCodeSshApi.credentials.js",
+			"dist/credentials/ClaudeCodeDockerApi.credentials.js"
+		],
+		"nodes": [
+			"dist/nodes/ClaudeCode/ClaudeCode.node.js"
+		]
+	},
+	"devDependencies": {
+		"@biomejs/biome": "^2.3.10",
+		"@semantic-release/changelog": "^6.0.3",
+		"@semantic-release/git": "^10.0.1",
+		"@types/node": "^25.0.3",
+		"@types/ssh2": "^1.15.5",
+		"@vitest/coverage-v8": "^4.0.16",
+		"semantic-release": "^25.0.2",
+		"testcontainers": "^11.11.0",
+		"typescript": "^5.9.3",
+		"vitest": "^4.0.16"
+	},
+	"dependencies": {
+		"ssh2": "^1.17.0"
+	},
+	"peerDependencies": {
+		"n8n-workflow": "*"
+	},
+	"engines": {
+		"node": ">=18.0.0"
+	},
+	"overrides": {
+		"form-data": "^4.0.4"
+	}
+}

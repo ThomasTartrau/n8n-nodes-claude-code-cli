@@ -1,0 +1,30 @@
+{
+	"node": "n8n-nodes-base.claudeCode",
+	"nodeVersion": "0.1.0",
+	"codexVersion": "0.1.0",
+	"categories": ["AI", "Development"],
+	"resources": {
+		"credentialDocumentation": [
+			{
+				"url": "https://github.com/ThomasTartrau/n8n-nodes-claude-code-cli"
+			}
+		],
+		"primaryDocumentation": [
+			{
+				"url": "https://github.com/ThomasTartrau/n8n-nodes-claude-code-cli"
+			}
+		]
+	},
+	"alias": [
+		"claude",
+		"anthropic",
+		"ai",
+		"code",
+		"cli",
+		"development",
+		"automation"
+	],
+	"subcategories": {
+		"AI": ["Agents", "Tools"]
+	}
+}

@@ -1,0 +1,160 @@
+/**
+ * Connection mode types for Claude Code execution
+ */
+export type ConnectionMode = "local" | "ssh" | "docker";
+
+/**
+ * Output format types supported by Claude Code CLI
+ */
+export type OutputFormat = "json" | "text";
+
+/**
+ * Available operations for the Claude Code node
+ */
+export type ClaudeCodeOperation =
+	| "executePrompt"
+	| "executeWithContext"
+	| "continueSession"
+	| "resumeSession";
+
+/**
+ * Tool permission configuration
+ */
+export interface ToolPermissions {
+	allowedTools?: string[];
+	disallowedTools?: string[];
+}
+
+/**
+ * Session configuration for conversation management
+ */
+export interface SessionConfig {
+	sessionId?: string;
+	continueLastSession?: boolean;
+}
+
+/**
+ * Context file for execution with context
+ */
+export interface ContextFile {
+	path: string;
+	content?: string;
+}
+
+/**
+ * Claude Code execution options
+ */
+export interface ClaudeCodeExecutionOptions {
+	prompt: string;
+	workingDirectory?: string;
+	outputFormat: OutputFormat;
+	model?: string;
+	maxTurns?: number;
+	toolPermissions?: ToolPermissions;
+	session?: SessionConfig;
+	contextFiles?: ContextFile[];
+	additionalArgs?: string[];
+	timeout?: number;
+	systemPrompt?: string;
+}
+
+/**
+ * Executor interface for different connection modes
+ */
+export interface IClaudeCodeExecutor {
+	execute(options: ClaudeCodeExecutionOptions): Promise<ClaudeCodeResult>;
+	testConnection(): Promise<boolean>;
+}
+
+/**
+ * Claude Code JSON output structure from CLI
+ */
+export interface ClaudeCodeJsonOutput {
+	session_id: string;
+	result?: string;
+	is_error?: boolean;
+	total_cost_usd?: number;
+	total_duration_ms?: number;
+	total_duration_api_ms?: number;
+	num_turns?: number;
+	usage?: {
+		input_tokens: number;
+		output_tokens: number;
+	};
+}
+
+/**
+ * Normalized result structure
+ */
+export interface ClaudeCodeResult {
+	success: boolean;
+	sessionId: string;
+	output: string;
+	rawOutput?: ClaudeCodeJsonOutput;
+	error?: string;
+	exitCode: number;
+	duration?: number;
+	cost?: number;
+	usage?: {
+		inputTokens: number;
+		outputTokens: number;
+	};
+	numTurns?: number;
+}
+
+/**
+ * Local connection credentials
+ */
+export interface LocalCredentials {
+	claudePath: string;
+	defaultWorkingDir: string;
+	envVars: string;
+}
+
+/**
+ * SSH connection credentials
+ */
+export interface SshCredentials {
+	host: string;
+	port: number;
+	username: string;
+	authMethod: "privateKey" | "password" | "agent";
+	privateKey?: string;
+	privateKeyPath?: string;
+	passphrase?: string;
+	password?: string;
+	claudePath: string;
+	defaultWorkingDir: string;
+}
+
+/**
+ * Docker exec credentials
+ */
+export interface DockerCredentials {
+	containerIdentifier: "name" | "id";
+	containerName?: string;
+	containerId?: string;
+	dockerHost: string;
+	user: string;
+	claudePath: string;
+	defaultWorkingDir: string;
+}
+
+/**
+ * Command builder result
+ */
+export interface CommandParts {
+	command: string;
+	args: string[];
+	env?: Record<string, string>;
+	cwd?: string;
+}
+
+/**
+ * Execution context passed to executors
+ */
+export interface ExecutionContext {
+	connectionMode: ConnectionMode;
+	credentials: LocalCredentials | SshCredentials | DockerCredentials;
+	options: ClaudeCodeExecutionOptions;
+}
