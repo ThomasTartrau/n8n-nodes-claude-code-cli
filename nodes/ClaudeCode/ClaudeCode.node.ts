@@ -34,7 +34,7 @@ export class ClaudeCode implements INodeType {
 		name: "claudeCode",
 		icon: "file:../../icons/claudecode.svg",
 		group: ["transform"],
-		version: 0.1,
+		version: 1,
 		subtitle: '={{$parameter["operation"]}}',
 		description:
 			"Execute Claude Code CLI commands for AI-assisted development tasks",
