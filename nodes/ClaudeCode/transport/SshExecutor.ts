@@ -137,6 +137,10 @@ export class SshExecutor implements IClaudeCodeExecutor {
 					stream.stderr.on("data", (data: Buffer) => {
 						stderr += data.toString();
 					});
+
+					// Close stdin to signal no input will be sent
+					// This prevents the remote process from waiting for input
+					stream.end();
 				});
 			});
 
@@ -197,6 +201,9 @@ export class SshExecutor implements IClaudeCodeExecutor {
 							resolve(code === 0);
 						}
 					});
+
+					// Close stdin to signal no input will be sent
+					stream.end();
 				});
 			});
 
