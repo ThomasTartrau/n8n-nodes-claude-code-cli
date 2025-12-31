@@ -1,3 +1,10 @@
+## [1.0.3](https://github.com/ThomasTartrau/n8n-nodes-claude-code-cli/compare/v1.0.2...v1.0.3) (2025-12-31)
+
+
+### Bug Fixes
+
+* close stdin on SSH stream to prevent hanging ([49e753a](https://github.com/ThomasTartrau/n8n-nodes-claude-code-cli/commit/49e753a6fd50c6a6762eec15223b5e55241d477b))
+
 ## [1.0.2](https://github.com/ThomasTartrau/n8n-nodes-claude-code-cli/compare/v1.0.1...v1.0.2) (2025-12-31)
 
 
