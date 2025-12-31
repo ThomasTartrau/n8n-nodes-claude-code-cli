@@ -1,3 +1,10 @@
+## [1.0.5](https://github.com/ThomasTartrau/n8n-nodes-claude-code-cli/compare/v1.0.4...v1.0.5) (2025-12-31)
+
+
+### Bug Fixes
+
+* normalize and validate SSH private keys before parsing ([0c7ad92](https://github.com/ThomasTartrau/n8n-nodes-claude-code-cli/commit/0c7ad92d35fc1db86fce458d7176400f9851a27c))
+
 ## [1.0.4](https://github.com/ThomasTartrau/n8n-nodes-claude-code-cli/compare/v1.0.3...v1.0.4) (2025-12-31)
 
 
