@@ -13,6 +13,8 @@ import {
 	parseJsonOutput,
 	normalizeOutput,
 	createErrorResult,
+	normalizePrivateKey,
+	validatePrivateKey,
 } from "../utils/index.js";
 
 /**
@@ -38,15 +40,25 @@ export class SshExecutor implements IClaudeCodeExecutor {
 		if (this.credentials.authMethod === "password") {
 			config.password = this.credentials.password;
 		} else if (this.credentials.authMethod === "privateKey") {
+			let privateKey: string | Buffer | undefined;
+
 			if (this.credentials.privateKey) {
-				config.privateKey = this.credentials.privateKey;
+				const validation = validatePrivateKey(this.credentials.privateKey);
+				if (!validation.valid) {
+					throw new Error(`SSH private key error: ${validation.error}`);
+				}
+				privateKey = normalizePrivateKey(this.credentials.privateKey);
 			} else if (this.credentials.privateKeyPath) {
 				// Expand ~ to home directory
 				const keyPath = this.credentials.privateKeyPath.replace(
 					/^~/,
 					homedir(),
 				);
-				config.privateKey = readFileSync(keyPath);
+				privateKey = readFileSync(keyPath);
+			}
+
+			if (privateKey) {
+				config.privateKey = privateKey;
 			}
 
 			if (this.credentials.passphrase) {
@@ -73,7 +85,16 @@ export class SshExecutor implements IClaudeCodeExecutor {
 		return new Promise((resolve) => {
 			const startTime = Date.now();
 			const remoteCmd = this.buildRemoteCommand(options);
-			const sshConfig = this.buildSshConfig();
+
+			let sshConfig: ConnectConfig;
+			try {
+				sshConfig = this.buildSshConfig();
+			} catch (err) {
+				const duration = Date.now() - startTime;
+				resolve(createErrorResult((err as Error).message, 1, duration));
+				return;
+			}
+
 			const timeoutMs = options.timeout ? options.timeout * 1000 : 300000;
 
 			let stdout = "";
@@ -186,7 +207,14 @@ export class SshExecutor implements IClaudeCodeExecutor {
 	 */
 	testConnection(): Promise<boolean> {
 		return new Promise((resolve) => {
-			const sshConfig = this.buildSshConfig();
+			let sshConfig: ConnectConfig;
+			try {
+				sshConfig = this.buildSshConfig();
+			} catch {
+				resolve(false);
+				return;
+			}
+
 			const conn = new Client();
 			let resolved = false;
 
