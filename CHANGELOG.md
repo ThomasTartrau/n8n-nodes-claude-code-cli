@@ -1,3 +1,10 @@
+## [1.0.4](https://github.com/ThomasTartrau/n8n-nodes-claude-code-cli/compare/v1.0.3...v1.0.4) (2025-12-31)
+
+
+### Bug Fixes
+
+* add pty:false option and exit event for SSH execution ([16361db](https://github.com/ThomasTartrau/n8n-nodes-claude-code-cli/commit/16361dbd76d6925b50d640b2f7577ecbdecaf884))
+
 ## [1.0.3](https://github.com/ThomasTartrau/n8n-nodes-claude-code-cli/compare/v1.0.2...v1.0.3) (2025-12-31)
 
 
