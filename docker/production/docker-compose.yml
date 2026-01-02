@@ -1,0 +1,28 @@
+services:
+  claude-code-runner:
+    build: .
+    container_name: claude-code-runner
+    restart: unless-stopped
+    volumes:
+      # Workspace: clone repos here or mount existing projects
+      # Option 1: Clone repos inside container (recommended for isolation)
+      #   docker exec -it claude-code-runner git clone <repo-url>
+      # Option 2: Mount existing project directory
+      #   - /path/to/your/project:/workspace/project-name
+      - ./workspace:/workspace
+
+      # Claude Code configuration and session persistence
+      - ./claude-config:/root/.claude
+
+      # MCP servers configuration directory
+      - ./mcp-servers:/root/.mcp
+
+      # Optional: Mount your local .mcp.json to avoid versioning credentials
+      # - ~/.mcp.json:/root/.mcp.json:ro
+
+    # Optional: Resource limits for production
+    # deploy:
+    #   resources:
+    #     limits:
+    #       cpus: '2'
+    #       memory: 4G

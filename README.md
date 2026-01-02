@@ -24,7 +24,7 @@
 
 [Getting Started](#-quick-start) •
 [Use Cases](#-use-cases) •
-[Documentation](#-node-operations)
+[Documentation](#%EF%B8%8F-node-operations)
 
 </div>
 
@@ -32,261 +32,102 @@
 
 ## ✨ Features
 
-<table>
-<tr>
-<td width="50%">
-
-### 🐳 Multiple Connection Modes
-Execute Claude Code locally, via SSH, or inside Docker containers
-
-### 🔄 Session Management
-Maintain multi-turn conversations across workflow executions
-
-### 🎯 Tool Permissions
-Fine-grained control over which tools Claude Code can use
-
-</td>
-<td width="50%">
-
-### 📁 Context File Support
-Include files and directories as context for code analysis
-
-### 🧠 Multiple Models
-Support for Opus, Sonnet, Haiku and specific versions
-
-### 📊 Rich Output
-Detailed metadata including costs, tokens, and session IDs
-
-</td>
-</tr>
-</table>
+| | |
+|---|---|
+| **🐳 Docker Execution** - Run Claude Code in isolated containers | **🔄 Session Management** - Multi-turn conversations across executions |
+| **🎯 Tool Permissions** - Fine-grained control over allowed tools | **📁 Context Files** - Include files and directories for analysis |
+| **🧠 Multiple Models** - Opus, Sonnet, Haiku support | **📊 Rich Output** - Costs, tokens, and session IDs |
 
 ---
 
 ## ⚡ Quick Start
 
-```
-1️⃣ Install  →  2️⃣ Setup Claude Code  →  3️⃣ Authenticate  →  4️⃣ Create Workflow  →  5️⃣ Run!
-```
+### 1. Install the n8n node
 
-<details>
-<summary><b>📋 Step-by-step guide</b></summary>
+In n8n: **Settings > Community Nodes > Install > `n8n-nodes-claude-code-cli`**
 
-### 1️⃣ Install the node
-
-
-#### **Install the node in n8n community nodes**
-
-Search for "n8n-nodes-claude-code-cli" in the n8n community nodes interface.
-Then install the node.
-
-
-#### **Install the node locally with git:**
-
-I recommend using git to install the node locally.
-*If there is a supply chain attack, you will not be affected by the automatic updates of the community nodes of n8n. And therefore your service will not be corrupted. Supply chain attacks are very dangerous, more and more frequent and can compromise your service. It is therefore recommended to use git to install the node locally.*
+### 2. Deploy Claude Code Runner
 
 ```bash
-git clone https://github.com/n8n-io/n8n-nodes-claude-code-cli.git
-cd n8n-nodes-claude-code-cli
-npm install
-npm run build
+mkdir -p claude-code-runner && cd claude-code-runner && curl -fsSL https://raw.githubusercontent.com/ThomasTartrau/n8n-nodes-claude-code-cli/main/docker/production/docker-compose.yml -o docker-compose.yml && curl -fsSL https://raw.githubusercontent.com/ThomasTartrau/n8n-nodes-claude-code-cli/main/docker/production/Dockerfile -o Dockerfile && docker compose up -d --build
 ```
 
+This sets up a production-ready container with:
+- `restart: unless-stopped` for automatic recovery
+- Persistent volumes for workspace, Claude config, and MCP servers
+- Healthcheck for container monitoring
 
-#### **Install locally with npm:**
+### 3. Authenticate
 
-```bash
-npm install n8n-nodes-claude-code-cli
-```
-
-**For local installation you need to add the environment variable `- N8N_CUSTOM_EXTENSIONS=/home/node/.n8n/custom` in your n8n configuration file.**
-
-### 2️⃣ Set up Claude Code
-
-Choose your deployment method (see [Installation](#-installation--deployment))
-
-### 3️⃣ Authenticate with Claude
-
-```bash
-# For Docker
-docker exec -it your-container-name claude login
-
-# For SSH or Local
-claude login
-```
-
-### 4️⃣ Create credentials in n8n
-
-Go to **Settings → Credentials → Add Credential** and select your connection type
-
-### 5️⃣ Add the node and run!
-
-Search for "Claude Code" in the node panel, configure, and execute
-
-</details>
-
-### 🐳 Docker (Recommended)
-
-> **Why Docker?** Isolation, easy setup, portability, and security.
-
-<details>
-<summary><b>Option 1: Node.js Container (Lightweight)</b></summary>
-
-Best for code analysis without system tools:
-
-```dockerfile
-FROM node:24-slim
-
-# Install Claude Code CLI
-RUN npm install -g @anthropic-ai/claude-code
-
-# Set up workspace
-WORKDIR /workspace
-
-# Keep container running
-CMD ["tail", "-f", "/dev/null"]
-```
-
-```yaml
-# docker-compose.yml
-services:
-  claude-code-runner:
-    build: .
-    volumes:
-      - ./workspace:/workspace
-```
-
-</details>
-
-<details>
-<summary><b>Option 2: Debian Container (Full Tooling)</b></summary>
-
-Best when Claude Code needs system tools (git, build tools, etc.):
-
-```dockerfile
-FROM debian:bookworm-slim
-
-# Install Node.js and common tools
-RUN apt-get update && apt-get install -y \
-    curl git build-essential \
-    && curl -fsSL https://deb.nodesource.com/setup_24.x | bash - \
-    && apt-get install -y nodejs \
-    && rm -rf /var/lib/apt/lists/*
-
-# Install Claude Code CLI
-RUN npm install -g @anthropic-ai/claude-code
-
-WORKDIR /workspace
-CMD ["tail", "-f", "/dev/null"]
-```
-
-</details>
-
-**🔑 Authenticate:**
 ```bash
 docker exec -it claude-code-runner claude login
 ```
 
-**⚙️ n8n Credentials:**
+Follow the browser prompts to complete authentication.
+
+### 4. Configure n8n credentials
+
 | Parameter | Value |
 |-----------|-------|
+| Connection Type | Docker |
 | Container Name | `claude-code-runner` |
 | Working Directory | `/workspace` |
 
+### 5. Start automating 🚀
+
+Search "Claude Code" in n8n node panel and create your first workflow.
+
 ---
 
-### 🔐 SSH (Alternative)
+## 🐳 Configuration
 
-> **Why SSH?** Full system access and dedicated resource isolation.
+### Workspace Setup
+
+You have two options to work with your code:
+
+**Option 1: Clone repos inside container** (recommended for isolation)
+```bash
+docker exec -it claude-code-runner git clone <repo-url>
+# Or use git worktree for multiple branches
+```
+
+**Option 2: Mount existing projects**
+```yaml
+volumes:
+  - /path/to/your/project:/workspace/project-name
+```
+
+### MCP Servers
+
+Mount your MCP configuration to enable additional tools:
+
+```yaml
+volumes:
+  # MCP servers directory
+  - ./mcp-servers:/root/.mcp
+  # Or mount your local .mcp.json (avoids versioning credentials)
+  - ~/.mcp.json:/root/.mcp.json:ro
+```
 
 <details>
-<summary><b>Setup Instructions</b></summary>
+<summary><b>🔐 Alternative: SSH deployment</b></summary>
 
-1. **Set up a VM** (AWS EC2, GCP, DigitalOcean, etc.)
+For dedicated VM deployments (AWS EC2, GCP, etc.):
 
-2. **Install Claude Code:**
-   ```bash
-   # Install Node.js
-   curl -fsSL https://deb.nodesource.com/setup_24.x | sudo -E bash -
-   sudo apt-get install -y nodejs
+```bash
+curl -fsSL https://deb.nodesource.com/setup_24.x | sudo -E bash -
+sudo apt-get install -y nodejs git
+npm install -g @anthropic-ai/claude-code
+claude login
+```
 
-   # Install Claude Code
-   npm install -g @anthropic-ai/claude-code
-
-   # Authenticate
-   claude login
-   ```
-
-3. **Configure SSH** with key-based authentication
-
-</details>
-
-**⚙️ n8n Credentials:**
+**n8n Credentials:**
 | Parameter | Value |
 |-----------|-------|
-| Host | Your VM IP/hostname |
+| Connection Type | SSH |
+| Host | Your VM IP |
 | Port | `22` |
 | Auth Method | `privateKey` |
-
----
-
-### 💻 Local (Not Recommended)
-
-> ⚠️ **Security concerns** - Claude Code runs in the same context as n8n
-
-<details>
-<summary><b>Why not recommended?</b></summary>
-
-- Security risks (shared execution context)
-- Resource contention
-- Harder to manage and update
-
-**If you must use local:**
-1. Install Claude Code inside your n8n container
-2. Run `claude login`
-3. Use "Local" connection mode
-
-</details>
-
----
-
-## 🔑 Authentication
-
-### Recommended: Claude Login (Subscription)
-
-> 💰 **Cheaper!** Claude Code subscription costs less than API usage.
-
-```bash
-# Docker
-docker exec -it container_name claude login
-
-# SSH (on remote server)
-claude login
-
-# Local
-claude login
-```
-
-Follow the browser prompts to authenticate.
-
-### Alternative: API Key
-
-<details>
-<summary><b>Using ANTHROPIC_API_KEY (not recommended)</b></summary>
-
-> ⚠️ More expensive than subscription pricing
-
-Set via environment variable:
-```bash
-export ANTHROPIC_API_KEY="your-api-key"
-```
-
-Or in Docker Compose:
-```yaml
-environment:
-  - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
-```
 
 </details>
 
@@ -418,77 +259,25 @@ environment:
 
 ### 🤖 Cloud Coding Bots
 
-Build AI coding assistants on any platform:
-
-<table>
-<tr>
-<td align="center" width="25%">
-
-**📱 Telegram**
-
-```
-User ──▶ Bot ──▶ Claude
-              ──▶ Reply
-```
-
-</td>
-<td align="center" width="25%">
-
-**💬 Slack**
-
-```
-@bot ──▶ Fetch ──▶ Claude
-              ──▶ Thread
-```
-
-</td>
-<td align="center" width="25%">
-
-**🎮 Discord**
-
-```
-!help ──▶ Parse ──▶ Claude
-               ──▶ Embed
-```
-
-</td>
-<td align="center" width="25%">
-
-**🦊 GitLab/GitHub**
-
-```
-Comment ──▶ API ──▶ Claude
-                ──▶ Reply
-```
-
-</td>
-</tr>
-</table>
+Build AI coding assistants on Telegram, Slack, Discord, or GitLab/GitHub.
 
 <details>
-<summary><b>Example: Telegram Bot</b></summary>
+<summary><b>Examples</b></summary>
 
-1. **Trigger**: Telegram trigger on new message
-2. **Process**: Claude Code handles coding question
-3. **Reply**: Send response via Telegram node
+**📱 Telegram Bot**
+1. Trigger: Telegram trigger on new message
+2. Process: Claude Code handles coding question
+3. Reply: Send response via Telegram node
 
-</details>
+**💬 Slack Bot**
+1. Trigger: Slack mention or slash command
+2. Context: Fetch relevant code from repos (optional)
+3. Respond: Post response to channel
 
-<details>
-<summary><b>Example: Slack Bot</b></summary>
-
-1. **Trigger**: Slack mention or slash command
-2. **Context**: Fetch relevant code from repos (optional)
-3. **Respond**: Post response to channel
-
-</details>
-
-<details>
-<summary><b>Example: GitLab/GitHub Bot</b></summary>
-
-1. **Trigger**: Issue comment with keyword (e.g., `/claude`)
-2. **Analyze**: Fetch issue context and code
-3. **Comment**: Post Claude's analysis
+**🦊 GitLab/GitHub Bot**
+1. Trigger: Issue comment with keyword (e.g., `/claude`)
+2. Analyze: Fetch issue context and code
+3. Comment: Post Claude's analysis
 
 </details>
 
@@ -524,10 +313,6 @@ Comment ──▶ API ──▶ Claude
 
 ## 🔒 Security
 
-<table>
-<tr>
-<td width="50%">
-
 ### 🛡️ Tool Permissions
 
 Control what Claude Code can do:
@@ -537,18 +322,11 @@ Control what Claude Code can do:
 ❌ Blocked: Bash(rm:*), Write(.env)
 ```
 
-</td>
-<td width="50%">
+### 🐳 Isolation Best Practices
 
-### 🐳 Isolation
-
-- Use Docker containers
-- Mount only needed directories
-- Read-only mounts when possible
-
-</td>
-</tr>
-</table>
+- Always set specific working directory
+- Avoid `/` or home directories
+- Create dedicated workspace per project
 
 <details>
 <summary><b>🔐 Recommended Security Settings</b></summary>
@@ -559,28 +337,45 @@ Control what Claude Code can do:
 - `Write(.env)` - Protect secrets
 - `Bash(curl:*)` - Block network (if not needed)
 
-**Isolation best practices:**
-- Always set specific working directory
-- Avoid `/` or home directories
-- Create dedicated workspace per project
-
 </details>
 
 ---
 
 ## 🤝 Contributing
 
-Contributions welcome!
+### Development Setup
 
 ```bash
-# 1. Fork the repo
-# 2. Create feature branch
+git clone https://github.com/ThomasTartrau/n8n-nodes-claude-code-cli.git
+cd n8n-nodes-claude-code-cli
+npm install && npm run build
+
+# Start n8n + claude-code-runner for testing
+docker compose -f docker/development/docker-compose.yml up -d --build
+
+# Authenticate claude-code-runner
+docker exec -it claude-code-runner claude login
+
+# Access n8n at http://localhost:5678
+```
+
+### Docker Files Structure
+
+```
+docker/
+├── development/
+│   ├── Dockerfile          # n8n with docker CLI
+│   └── docker-compose.yml  # n8n + claude-code-runner
+└── production/
+    ├── Dockerfile          # Standalone claude-code-runner
+    └── docker-compose.yml  # For end users
+```
+
+### Submit Changes
+
+```bash
 git checkout -b feature/amazing-feature
-
-# 3. Commit changes
 git commit -m 'feat: add amazing feature'
-
-# 4. Push & create PR
 git push origin feature/amazing-feature
 ```
 
