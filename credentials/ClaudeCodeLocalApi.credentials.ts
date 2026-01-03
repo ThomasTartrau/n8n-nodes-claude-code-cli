@@ -3,7 +3,7 @@ import type { ICredentialType, INodeProperties, Icon } from "n8n-workflow";
 export class ClaudeCodeLocalApi implements ICredentialType {
 	name = "claudeCodeLocalApi";
 	displayName = "Claude Code Local";
-	icon: Icon = { light: "file:claudecode.svg", dark: "file:claudecode.svg" };
+	icon: Icon = "file:../icons/claudecode.svg";
 	documentationUrl =
 		"https://github.com/ThomasTartrau/n8n-nodes-claude-code-cli";
 
