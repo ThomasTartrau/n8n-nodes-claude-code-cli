@@ -1,3 +1,10 @@
+## [1.0.7](https://github.com/ThomasTartrau/n8n-nodes-claude-code-cli/compare/v1.0.6...v1.0.7) (2026-01-03)
+
+
+### Bug Fixes
+
+* remove semantic-release-replace-plugin from release configuration ([7bd2529](https://github.com/ThomasTartrau/n8n-nodes-claude-code-cli/commit/7bd25297182836ce537dccbabb2bca22c8ecb38b))
+
 ## [1.0.6](https://github.com/ThomasTartrau/n8n-nodes-claude-code-cli/compare/v1.0.5...v1.0.6) (2025-12-31)
 
 
