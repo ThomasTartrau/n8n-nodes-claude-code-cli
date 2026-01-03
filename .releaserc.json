@@ -5,19 +5,6 @@
 		"@semantic-release/release-notes-generator",
 		"@semantic-release/changelog",
 		"@semantic-release/npm",
-		[
-			"semantic-release-replace-plugin",
-			{
-				"replacements": [
-					{
-						"files": ["nodes/ClaudeCode/ClaudeCode.node.ts"],
-						"from": "version: \\d+,",
-						"to": "version: <%= nextRelease.major %>,",
-						"countMatches": true
-					}
-				]
-			}
-		],
 		"@semantic-release/github",
 		[
 			"@semantic-release/git",
