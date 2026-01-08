@@ -73,6 +73,23 @@ Follow the browser prompts to complete authentication.
 | Container Name | `claude-code-runner` |
 | Working Directory | `/workspace` |
 
+<details>
+<summary><b>Running n8n in Docker?</b></summary>
+
+If your n8n instance is also running in a Docker container, you need to mount the Docker socket so n8n can execute commands in claude-code-runner:
+
+```yaml
+# Add to your n8n docker-compose.yml
+services:
+  n8n:
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+```
+
+**Important:** Both containers must be managed by the same Docker daemon. The node uses `docker exec` (not HTTP) to communicate with claude-code-runner.
+
+</details>
+
 ### 5. Start automating 🚀
 
 Search "Claude Code" in n8n node panel and create your first workflow.
