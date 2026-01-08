@@ -1,3 +1,10 @@
+# [1.1.0](https://github.com/ThomasTartrau/n8n-nodes-claude-code-cli/compare/v1.0.7...v1.1.0) (2026-01-08)
+
+
+### Features
+
+* add permission mode selector to node ([7084e59](https://github.com/ThomasTartrau/n8n-nodes-claude-code-cli/commit/7084e59350fb02faf45d6def0e62786d702ab679))
+
 ## [1.0.7](https://github.com/ThomasTartrau/n8n-nodes-claude-code-cli/compare/v1.0.6...v1.0.7) (2026-01-03)
 
 
