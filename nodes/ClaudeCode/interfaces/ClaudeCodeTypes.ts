@@ -9,6 +9,17 @@ export type ConnectionMode = "local" | "ssh" | "docker";
 export type OutputFormat = "json" | "text";
 
 /**
+ * Permission mode types for Claude Code CLI
+ */
+export type PermissionMode =
+	| "default"
+	| "acceptEdits"
+	| "plan"
+	| "dontAsk"
+	| "bypassPermissions"
+	| "delegate";
+
+/**
  * Available operations for the Claude Code node
  */
 export type ClaudeCodeOperation =
@@ -50,6 +61,7 @@ export interface ClaudeCodeExecutionOptions {
 	outputFormat: OutputFormat;
 	model?: string;
 	maxTurns?: number;
+	permissionMode?: PermissionMode;
 	toolPermissions?: ToolPermissions;
 	session?: SessionConfig;
 	contextFiles?: ContextFile[];

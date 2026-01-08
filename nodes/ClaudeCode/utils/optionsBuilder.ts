@@ -4,6 +4,7 @@ import type {
 	ClaudeCodeOperation,
 	ToolPermissions,
 	OutputFormat,
+	PermissionMode,
 	SessionConfig,
 	ContextFile,
 } from "../interfaces/index.js";
@@ -102,12 +103,24 @@ export function buildExecutionOptions(
 		model = undefined as unknown as string;
 	}
 
+	// Handle permission mode
+	const permissionModeRaw = context.getNodeParameter(
+		"permissionMode",
+		itemIndex,
+		"default",
+	) as string;
+	const permissionMode: PermissionMode | undefined =
+		permissionModeRaw && permissionModeRaw !== "default"
+			? (permissionModeRaw as PermissionMode)
+			: undefined;
+
 	return {
 		prompt,
 		workingDirectory: options.workingDirectory as string | undefined,
 		outputFormat,
 		model,
 		maxTurns: (options.maxTurns as number) || undefined,
+		permissionMode,
 		toolPermissions,
 		session,
 		contextFiles,
