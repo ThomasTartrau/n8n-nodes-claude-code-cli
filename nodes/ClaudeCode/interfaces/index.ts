@@ -1,6 +1,7 @@
 export type {
 	ConnectionMode,
 	OutputFormat,
+	PermissionMode,
 	ClaudeCodeOperation,
 	ToolPermissions,
 	SessionConfig,

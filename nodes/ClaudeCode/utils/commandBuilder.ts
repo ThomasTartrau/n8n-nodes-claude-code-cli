@@ -37,6 +37,11 @@ export function buildCommand(
 		args.push("--max-turns", String(options.maxTurns));
 	}
 
+	// Permission mode
+	if (options.permissionMode) {
+		args.push("--permission-mode", options.permissionMode);
+	}
+
 	// Session management
 	if (options.session?.continueLastSession) {
 		args.push("--continue");

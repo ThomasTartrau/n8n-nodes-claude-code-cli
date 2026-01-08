@@ -13,6 +13,7 @@ import {
 	promptDescription,
 	contextDescription,
 	sessionDescription,
+	permissionModeDescription,
 	toolPermissionsDescription,
 	modelDescription,
 	optionsDescription,
@@ -88,6 +89,9 @@ export class ClaudeCode implements INodeType {
 
 			// Session ID (for resumeSession)
 			...sessionDescription,
+
+			// Permission mode
+			...permissionModeDescription,
 
 			// Tool permissions
 			...toolPermissionsDescription,
