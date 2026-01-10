@@ -24,9 +24,11 @@ export const optionsDescription: INodeProperties[] = [
 				options: [
 					{ name: "JSON", value: "json" },
 					{ name: "Text", value: "text" },
+					{ name: "Stream JSON", value: "stream-json" },
 				],
 				default: "json",
-				description: "Output format for Claude Code response",
+				description:
+					"Output format for Claude Code response. Stream JSON captures all tool interactions as streaming events.",
 			},
 			{
 				displayName: "Max Turns",

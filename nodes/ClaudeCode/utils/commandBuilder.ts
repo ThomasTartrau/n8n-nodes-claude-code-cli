@@ -25,6 +25,10 @@ export function buildCommand(
 	// Output format
 	if (options.outputFormat) {
 		args.push("--output-format", options.outputFormat);
+		// stream-json requires --verbose for complete event capture
+		if (options.outputFormat === "stream-json") {
+			args.push("--verbose");
+		}
 	}
 
 	// Model selection

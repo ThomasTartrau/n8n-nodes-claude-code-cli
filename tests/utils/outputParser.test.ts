@@ -3,11 +3,14 @@ import {
 	parseJsonOutput,
 	normalizeOutput,
 	createErrorResult,
+	parseStreamJsonOutput,
+	normalizeStreamOutput,
 } from "../../nodes/ClaudeCode/utils/outputParser.js";
 import {
 	validJsonOutputs,
 	invalidJsonOutputs,
 	parsedOutputs,
+	validStreamJsonOutputs,
 } from "../fixtures/mockOutputs.js";
 
 describe("outputParser", () => {
@@ -266,6 +269,123 @@ describe("outputParser", () => {
 			expect(result.usage).toBeUndefined();
 			expect(result.numTurns).toBeUndefined();
 			expect(result.rawOutput).toBeUndefined();
+		});
+	});
+
+	describe("parseStreamJsonOutput", () => {
+		it("should parse simple stream output", () => {
+			const { events, result } = parseStreamJsonOutput(
+				validStreamJsonOutputs.simple,
+			);
+
+			expect(events.length).toBe(3);
+			expect(events[0].type).toBe("system");
+			expect(result).not.toBeNull();
+			expect(result?.subtype).toBe("success");
+		});
+
+		it("should capture all tool use events", () => {
+			const { events } = parseStreamJsonOutput(
+				validStreamJsonOutputs.withToolUse,
+			);
+
+			const toolUseEvent = events.find(
+				(e) =>
+					e.type === "assistant" &&
+					(e as { message?: { content?: Array<{ type: string }> } }).message
+						?.content?.[0]?.type === "tool_use",
+			);
+			expect(toolUseEvent).toBeDefined();
+
+			const toolResultEvent = events.find((e) => e.type === "user");
+			expect(toolResultEvent).toBeDefined();
+		});
+
+		it("should handle empty input", () => {
+			const { events, result } = parseStreamJsonOutput("");
+
+			expect(events.length).toBe(0);
+			expect(result).toBeNull();
+		});
+
+		it("should handle whitespace-only input", () => {
+			const { events, result } = parseStreamJsonOutput("   \n  \n   ");
+
+			expect(events.length).toBe(0);
+			expect(result).toBeNull();
+		});
+
+		it("should skip non-JSON lines", () => {
+			const input = [
+				'{"type":"system","subtype":"init","session_id":"test"}',
+				"some log output",
+				'{"type":"result","subtype":"success","result":"done"}',
+			].join("\n");
+
+			const { events, result } = parseStreamJsonOutput(input);
+
+			expect(events.length).toBe(2);
+			expect(result?.result).toBe("done");
+		});
+	});
+
+	describe("normalizeStreamOutput", () => {
+		it("should extract session_id from init event", () => {
+			const { events, result } = parseStreamJsonOutput(
+				validStreamJsonOutputs.simple,
+			);
+			const normalized = normalizeStreamOutput(events, result, 0, 1000);
+
+			expect(normalized.sessionId).toBe("stream-1");
+		});
+
+		it("should mark as success when result subtype is success", () => {
+			const { events, result } = parseStreamJsonOutput(
+				validStreamJsonOutputs.simple,
+			);
+			const normalized = normalizeStreamOutput(events, result, 0, 1000);
+
+			expect(normalized.success).toBe(true);
+		});
+
+		it("should mark as failure when result subtype is error", () => {
+			const { events, result } = parseStreamJsonOutput(
+				validStreamJsonOutputs.errorResult,
+			);
+			const normalized = normalizeStreamOutput(events, result, 0, 500);
+
+			expect(normalized.success).toBe(false);
+		});
+
+		it("should include all stream events in result", () => {
+			const { events, result } = parseStreamJsonOutput(
+				validStreamJsonOutputs.withToolUse,
+			);
+			const normalized = normalizeStreamOutput(events, result, 0, 1000);
+
+			expect(normalized.streamEvents).toBeDefined();
+			expect(normalized.streamEvents?.length).toBe(4);
+		});
+
+		it("should extract cost and usage from result event", () => {
+			const { events, result } = parseStreamJsonOutput(
+				validStreamJsonOutputs.withToolUse,
+			);
+			const normalized = normalizeStreamOutput(events, result, 0, 1000);
+
+			expect(normalized.cost).toBe(0.01);
+			expect(normalized.usage?.inputTokens).toBe(100);
+			expect(normalized.usage?.outputTokens).toBe(50);
+		});
+
+		it("should handle missing result event", () => {
+			const events = [
+				{ type: "system" as const, subtype: "init", session_id: "test" },
+			];
+			const normalized = normalizeStreamOutput(events, null, 0, 1000);
+
+			expect(normalized.success).toBe(true);
+			expect(normalized.output).toBe("");
 		});
 	});
 });

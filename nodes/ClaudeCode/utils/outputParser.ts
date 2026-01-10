@@ -1,6 +1,8 @@
 import type {
 	ClaudeCodeJsonOutput,
 	ClaudeCodeResult,
+	StreamEvent,
+	StreamResultEvent,
 } from "../interfaces/index.js";
 
 /**
@@ -94,5 +96,88 @@ export function createErrorResult(
 		exitCode,
 		duration,
 		error,
+	};
+}
+
+/**
+ * Parses NDJSON stream output from Claude Code CLI (stream-json format)
+ * Returns array of all events and extracts final result
+ */
+export function parseStreamJsonOutput(output: string): {
+	events: StreamEvent[];
+	result: StreamResultEvent | null;
+} {
+	const events: StreamEvent[] = [];
+	let resultEvent: StreamResultEvent | null = null;
+
+	if (!output.trim()) {
+		return { events, result: null };
+	}
+
+	const lines = output.trim().split("\n");
+
+	for (const line of lines) {
+		const trimmedLine = line.trim();
+		if (!trimmedLine || !trimmedLine.startsWith("{")) {
+			continue;
+		}
+
+		const event = JSON.parse(trimmedLine) as StreamEvent;
+		events.push(event);
+
+		if (event.type === "result") {
+			resultEvent = event as StreamResultEvent;
+		}
+	}
+
+	return { events, result: resultEvent };
+}
+
+/**
+ * Converts stream-json output to normalized result with events
+ */
+export function normalizeStreamOutput(
+	events: StreamEvent[],
+	resultEvent: StreamResultEvent | null,
+	exitCode: number,
+	duration: number,
+	stderr?: string,
+): ClaudeCodeResult {
+	const success =
+		exitCode === 0 &&
+		resultEvent?.subtype !== "error" &&
+		resultEvent?.subtype !== "error_max_turns";
+
+	let sessionId = "";
+	const initEvent = events.find(
+		(e) => e.type === "system" && e.subtype === "init",
+	);
+	if (initEvent?.session_id) {
+		sessionId = initEvent.session_id;
+	} else if (resultEvent?.session_id) {
+		sessionId = resultEvent.session_id;
+	}
+
+	let output = "";
+	if (resultEvent?.result) {
+		output = resultEvent.result;
+	}
+
+	return {
+		success,
+		sessionId,
+		output,
+		exitCode,
+		duration,
+		cost: resultEvent?.total_cost_usd,
+		numTurns: resultEvent?.num_turns,
+		usage: resultEvent?.usage
+			? {
+					inputTokens: resultEvent.usage.input_tokens,
+					outputTokens: resultEvent.usage.output_tokens,
+				}
+			: undefined,
+		error: !success ? stderr || resultEvent?.result : undefined,
+		streamEvents: events,
 	};
 }

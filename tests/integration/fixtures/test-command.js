@@ -59,6 +59,67 @@ if (prompt.startsWith("__sleep__")) {
 			usage: { input_tokens: 10, output_tokens: 20 },
 		}),
 	);
+} else if (outputFormat === "stream-json") {
+	// Stream JSON output format (NDJSON)
+	const sessionId = "test-stream-session-456";
+	// Init event
+	console.log(
+		JSON.stringify({
+			type: "system",
+			subtype: "init",
+			session_id: sessionId,
+			tools: ["Bash", "Read", "Write"],
+			model: "test-model",
+			cwd: process.cwd(),
+		}),
+	);
+	// Assistant message with tool use
+	console.log(
+		JSON.stringify({
+			type: "assistant",
+			message: {
+				content: [
+					{ type: "text", text: `Processing: ${prompt}` },
+					{
+						type: "tool_use",
+						id: "tool_1",
+						name: "Bash",
+						input: { command: "echo test" },
+					},
+				],
+			},
+			session_id: sessionId,
+		}),
+	);
+	// Tool result
+	console.log(
+		JSON.stringify({
+			type: "user",
+			message: {
+				content: [
+					{
+						type: "tool_result",
+						tool_use_id: "tool_1",
+						content: "test output",
+						is_error: false,
+					},
+				],
+			},
+			session_id: sessionId,
+		}),
+	);
+	// Final result
+	console.log(
+		JSON.stringify({
+			type: "result",
+			subtype: "success",
+			session_id: sessionId,
+			result: prompt,
+			total_cost_usd: 0.002,
+			num_turns: 1,
+			usage: { input_tokens: 50, output_tokens: 100 },
+		}),
+	);
 } else {
 	// Default: echo the prompt
 	console.log(prompt);

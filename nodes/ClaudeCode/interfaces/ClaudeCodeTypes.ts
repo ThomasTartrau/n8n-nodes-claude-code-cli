@@ -6,7 +6,7 @@ export type ConnectionMode = "local" | "ssh" | "docker";
 /**
  * Output format types supported by Claude Code CLI
  */
-export type OutputFormat = "json" | "text";
+export type OutputFormat = "json" | "text" | "stream-json";
 
 /**
  * Permission mode types for Claude Code CLI
@@ -112,6 +112,92 @@ export interface ClaudeCodeResult {
 		outputTokens: number;
 	};
 	numTurns?: number;
+	streamEvents?: StreamEvent[];
+}
+
+/**
+ * Stream-JSON event types from Claude CLI
+ */
+export type StreamEventType = "system" | "assistant" | "user" | "result";
+
+/**
+ * Base stream event structure
+ */
+export interface StreamEvent {
+	type: StreamEventType;
+	subtype?: string;
+	session_id?: string;
+	[key: string]: unknown;
+}
+
+/**
+ * System init event from stream-json
+ */
+export interface StreamSystemEvent extends StreamEvent {
+	type: "system";
+	subtype: "init";
+	session_id: string;
+	tools?: string[];
+	model?: string;
+	cwd?: string;
+}
+
+/**
+ * Assistant message content item
+ */
+export interface StreamContentItem {
+	type: "text" | "tool_use";
+	text?: string;
+	id?: string;
+	name?: string;
+	input?: Record<string, unknown>;
+}
+
+/**
+ * Tool result content item
+ */
+export interface StreamToolResultItem {
+	type: "tool_result";
+	tool_use_id: string;
+	content: string;
+	is_error?: boolean;
+}
+
+/**
+ * Assistant message event from stream-json
+ */
+export interface StreamAssistantEvent extends StreamEvent {
+	type: "assistant";
+	message: {
+		content: StreamContentItem[];
+	};
+}
+
+/**
+ * User/tool result event from stream-json
+ */
+export interface StreamUserEvent extends StreamEvent {
+	type: "user";
+	message: {
+		content: StreamToolResultItem[];
+	};
+}
+
+/**
+ * Final result event from stream-json
+ */
+export interface StreamResultEvent extends StreamEvent {
+	type: "result";
+	subtype: "success" | "error" | "error_max_turns";
+	result?: string;
+	session_id?: string;
+	total_cost_usd?: number;
+	total_duration_ms?: number;
+	num_turns?: number;
+	usage?: {
+		input_tokens: number;
+		output_tokens: number;
+	};
 }
 
 /**

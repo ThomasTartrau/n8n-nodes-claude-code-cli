@@ -107,3 +107,26 @@ export const parsedOutputs: Record<string, ClaudeCodeJsonOutput> = {
 		result: "No session",
 	},
 };
+
+/**
+ * Valid stream-json (NDJSON) output samples from Claude Code CLI
+ */
+export const validStreamJsonOutputs: Record<string, string> = {
+	simple: [
+		'{"type":"system","subtype":"init","session_id":"stream-1","tools":[]}',
+		'{"type":"assistant","message":{"content":[{"type":"text","text":"Hello"}]}}',
+		'{"type":"result","subtype":"success","session_id":"stream-1","result":"Done"}',
+	].join("\n"),
+
+	withToolUse: [
+		'{"type":"system","subtype":"init","session_id":"stream-2","tools":["Bash"]}',
+		'{"type":"assistant","message":{"content":[{"type":"tool_use","id":"t1","name":"Bash","input":{"cmd":"ls"}}]}}',
+		'{"type":"user","message":{"content":[{"type":"tool_result","tool_use_id":"t1","content":"file.txt"}]}}',
+		'{"type":"result","subtype":"success","total_cost_usd":0.01,"usage":{"input_tokens":100,"output_tokens":50}}',
+	].join("\n"),
+
+	errorResult: [
+		'{"type":"system","subtype":"init","session_id":"stream-err"}',
+		'{"type":"result","subtype":"error","result":"Something failed"}',
+	].join("\n"),
+};

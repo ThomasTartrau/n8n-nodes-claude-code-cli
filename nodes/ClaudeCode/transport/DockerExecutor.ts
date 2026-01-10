@@ -10,6 +10,8 @@ import {
 	parseJsonOutput,
 	normalizeOutput,
 	createErrorResult,
+	parseStreamJsonOutput,
+	normalizeStreamOutput,
 } from "../utils/index.js";
 
 /**
@@ -140,6 +142,11 @@ export class DockerExecutor implements IClaudeCodeExecutor {
 				if (options.outputFormat === "json") {
 					const parsed = parseJsonOutput(stdout);
 					resolve(normalizeOutput(parsed, exitCode, duration, stderr));
+				} else if (options.outputFormat === "stream-json") {
+					const { events, result } = parseStreamJsonOutput(stdout);
+					resolve(
+						normalizeStreamOutput(events, result, exitCode, duration, stderr),
+					);
 				} else {
 					resolve({
 						success: exitCode === 0,
