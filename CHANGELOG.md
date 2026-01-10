@@ -1,3 +1,10 @@
+# [1.2.0](https://github.com/ThomasTartrau/n8n-nodes-claude-code-cli/compare/v1.1.0...v1.2.0) (2026-01-10)
+
+
+### Features
+
+* add stream-json output format to capture tool interactions ([6179c2b](https://github.com/ThomasTartrau/n8n-nodes-claude-code-cli/commit/6179c2be77238b322d47fe56e3b07004ddaec75f))
+
 # [1.1.0](https://github.com/ThomasTartrau/n8n-nodes-claude-code-cli/compare/v1.0.7...v1.1.0) (2026-01-08)
 
 
