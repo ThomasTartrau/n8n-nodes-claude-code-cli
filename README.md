@@ -48,14 +48,62 @@ In n8n: **Settings > Community Nodes > Install > `n8n-nodes-claude-code-cli`**
 
 ### 2. Deploy Claude Code Runner
 
+**n8n installed on host (not in Docker)?** Use the standalone setup:
+
 ```bash
-mkdir -p claude-code-runner && cd claude-code-runner && curl -fsSL https://raw.githubusercontent.com/ThomasTartrau/n8n-nodes-claude-code-cli/main/docker/production/docker-compose.yml -o docker-compose.yml && curl -fsSL https://raw.githubusercontent.com/ThomasTartrau/n8n-nodes-claude-code-cli/main/docker/production/Dockerfile -o Dockerfile && docker compose up -d --build
+mkdir -p claude-code-runner && cd claude-code-runner && \
+curl -fsSL https://raw.githubusercontent.com/ThomasTartrau/n8n-nodes-claude-code-cli/main/docker/production/claude-code/docker-compose.yml -o docker-compose.yml && \
+curl -fsSL https://raw.githubusercontent.com/ThomasTartrau/n8n-nodes-claude-code-cli/main/docker/production/claude-code/Dockerfile -o Dockerfile && \
+docker compose up -d --build
 ```
 
-This sets up a production-ready container with:
-- `restart: unless-stopped` for automatic recovery
-- Persistent volumes for workspace, Claude config, and MCP servers
-- Healthcheck for container monitoring
+<details>
+<summary><b>n8n also running in Docker?</b> Use the complete stack instead</summary>
+
+The node uses `docker exec` to communicate with claude-code-runner. This requires:
+1. **Docker CLI** installed inside the n8n container
+2. **Docker socket** mounted to access the Docker daemon
+
+The standard `n8nio/n8n` image doesn't include Docker CLI, so we provide a custom setup:
+
+```bash
+mkdir -p n8n-claude-code && cd n8n-claude-code && \
+curl -fsSL https://raw.githubusercontent.com/ThomasTartrau/n8n-nodes-claude-code-cli/main/docker/production/n8n-with-claude-code/docker-compose.yml -o docker-compose.yml && \
+curl -fsSL https://raw.githubusercontent.com/ThomasTartrau/n8n-nodes-claude-code-cli/main/docker/production/n8n-with-claude-code/Dockerfile.n8n -o Dockerfile.n8n && \
+curl -fsSL https://raw.githubusercontent.com/ThomasTartrau/n8n-nodes-claude-code-cli/main/docker/production/n8n-with-claude-code/Dockerfile.claude-code -o Dockerfile.claude-code && \
+docker compose up -d --build
+```
+
+This builds a custom n8n image with Docker CLI and deploys both n8n and claude-code-runner together. Access n8n at http://localhost:5678
+
+**Already have n8n running in Docker?** You can modify your existing setup:
+
+1. Create a custom Dockerfile for n8n:
+```dockerfile
+FROM docker:29-cli AS docker-cli
+FROM n8nio/n8n
+USER root
+COPY --from=docker-cli /usr/local/bin/docker /usr/local/bin/docker
+RUN chmod +x /usr/local/bin/docker
+USER node
+```
+
+2. Update your docker-compose.yml:
+```yaml
+services:
+  n8n:
+    build: .  # Use the custom Dockerfile above
+    user: root  # Required for Docker socket access
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      # ... your other volumes
+```
+
+3. Deploy claude-code-runner separately using the standalone setup above
+
+**Important:** Both containers must be managed by the same Docker daemon.
+
+</details>
 
 ### 3. Authenticate
 
@@ -72,23 +120,6 @@ Follow the browser prompts to complete authentication.
 | Connection Type | Docker |
 | Container Name | `claude-code-runner` |
 | Working Directory | `/workspace` |
-
-<details>
-<summary><b>Running n8n in Docker?</b></summary>
-
-If your n8n instance is also running in a Docker container, you need to mount the Docker socket so n8n can execute commands in claude-code-runner:
-
-```yaml
-# Add to your n8n docker-compose.yml
-services:
-  n8n:
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
-```
-
-**Important:** Both containers must be managed by the same Docker daemon. The node uses `docker exec` (not HTTP) to communicate with claude-code-runner.
-
-</details>
 
 ### 5. Start automating 🚀
 
@@ -381,11 +412,16 @@ docker exec -it claude-code-runner claude login
 ```
 docker/
 ├── development/
-│   ├── Dockerfile          # n8n with docker CLI
-│   └── docker-compose.yml  # n8n + claude-code-runner
+│   ├── Dockerfile          # n8n with docker CLI (dev)
+│   └── docker-compose.yml  # n8n + claude-code-runner (mounts dist/)
 └── production/
-    ├── Dockerfile          # Standalone claude-code-runner
-    └── docker-compose.yml  # For end users
+    ├── claude-code/
+    │   ├── Dockerfile          # Standalone claude-code-runner
+    │   └── docker-compose.yml  # For n8n on host (not Docker)
+    └── n8n-with-claude-code/
+        ├── Dockerfile.n8n          # n8n with Docker CLI
+        ├── Dockerfile.claude-code  # claude-code-runner
+        └── docker-compose.yml      # Complete stack (both services)
 ```
 
 ### Submit Changes
