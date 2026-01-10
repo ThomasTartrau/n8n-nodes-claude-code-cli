@@ -1,0 +1,64 @@
+# Complete stack: n8n + claude-code-runner
+# Use this when running n8n in Docker alongside claude-code-runner
+
+services:
+  n8n:
+    build:
+      context: .
+      dockerfile: Dockerfile.n8n
+    container_name: n8n
+    user: root  # Required for Docker socket access
+    ports:
+      - "5678:5678"
+    volumes:
+      # n8n data persistence
+      - n8n_data:/home/node/.n8n
+      # Docker socket - required for n8n to run 'docker exec' commands
+      - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      - N8N_HOST=0.0.0.0
+      - N8N_PORT=5678
+      - N8N_PROTOCOL=http
+      # Optional: Set your timezone
+      # - GENERIC_TIMEZONE=Europe/Paris
+      # - TZ=Europe/Paris
+    restart: unless-stopped
+    depends_on:
+      claude-code:
+        condition: service_healthy
+
+  claude-code:
+    build:
+      context: .
+      dockerfile: Dockerfile.claude-code
+    container_name: claude-code-runner
+    volumes:
+      # Workspace: clone repos here or mount existing projects
+      # Option 1: Clone repos inside container (recommended for isolation)
+      #   docker exec -it claude-code-runner git clone <repo-url>
+      # Option 2: Mount existing project directory
+      #   - /path/to/your/project:/workspace/project-name
+      - ./workspace:/workspace
+
+      # Claude Code configuration and session persistence
+      - ./claude-config:/root/.claude
+
+      # MCP servers configuration directory
+      - ./mcp-servers:/root/.mcp
+
+      # Optional: Mount your local .mcp.json to avoid versioning credentials
+      # - ~/.mcp.json:/root/.mcp.json:ro
+    tty: true
+    stdin_open: true
+    restart: unless-stopped
+
+    # Optional: Resource limits for production
+    # deploy:
+    #   resources:
+    #     limits:
+    #       cpus: '2'
+    #       memory: 4G
+
+volumes:
+  n8n_data:
+    name: n8n_data
