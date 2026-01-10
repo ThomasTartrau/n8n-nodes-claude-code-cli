@@ -191,6 +191,12 @@ export class ClaudeCode implements INodeType {
 				outputJson.rawOutput = result.rawOutput as unknown as IDataObject;
 			}
 
+			// Add stream events if present (for stream-json output format)
+			if (result.streamEvents && result.streamEvents.length > 0) {
+				outputJson.streamEvents =
+					result.streamEvents as unknown as IDataObject[];
+			}
+
 			// Format output
 			returnData.push({
 				json: outputJson,

@@ -106,6 +106,36 @@ describe("LocalExecutor Integration", () => {
 				expect(result.cost).toBe(0.001);
 			});
 		});
+
+		it("should handle stream-json output format", () => {
+			const credentials = createLocalTestCredentials();
+			const executor = new LocalExecutor(credentials);
+			const options = {
+				prompt: "test streaming",
+				outputFormat: "stream-json" as const,
+				timeout: 30,
+			};
+
+			return executor.execute(options).then((result) => {
+				expect(result.exitCode).toBe(0);
+				expect(result.success).toBe(true);
+				expect(result.sessionId).toBe("test-stream-session-456");
+				expect(result.streamEvents).toBeDefined();
+				expect(result.streamEvents?.length).toBeGreaterThan(0);
+
+				// Verify event types present
+				const eventTypes = result.streamEvents?.map((e) => e.type);
+				expect(eventTypes).toContain("system");
+				expect(eventTypes).toContain("assistant");
+				expect(eventTypes).toContain("user");
+				expect(eventTypes).toContain("result");
+
+				// Verify cost and usage
+				expect(result.cost).toBe(0.002);
+				expect(result.usage?.inputTokens).toBe(50);
+				expect(result.usage?.outputTokens).toBe(100);
+			});
+		});
 	});
 
 	describe("testConnection", () => {

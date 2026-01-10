@@ -15,4 +15,12 @@ export type {
 	DockerCredentials,
 	CommandParts,
 	ExecutionContext,
+	StreamEventType,
+	StreamEvent,
+	StreamSystemEvent,
+	StreamContentItem,
+	StreamToolResultItem,
+	StreamAssistantEvent,
+	StreamUserEvent,
+	StreamResultEvent,
 } from "./ClaudeCodeTypes.js";

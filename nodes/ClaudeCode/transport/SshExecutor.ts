@@ -15,6 +15,8 @@ import {
 	createErrorResult,
 	normalizePrivateKey,
 	validatePrivateKey,
+	parseStreamJsonOutput,
+	normalizeStreamOutput,
 } from "../utils/index.js";
 
 /**
@@ -142,6 +144,11 @@ export class SshExecutor implements IClaudeCodeExecutor {
 							if (options.outputFormat === "json") {
 								const parsed = parseJsonOutput(stdout);
 								resolve(normalizeOutput(parsed, code, duration, stderr));
+							} else if (options.outputFormat === "stream-json") {
+								const { events, result } = parseStreamJsonOutput(stdout);
+								resolve(
+									normalizeStreamOutput(events, result, code, duration, stderr),
+								);
 							} else {
 								resolve({
 									success: code === 0,
