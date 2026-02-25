@@ -1,3 +1,10 @@
+# [1.3.0](https://github.com/ThomasTartrau/n8n-nodes-claude-code-cli/compare/v1.2.0...v1.3.0) (2026-02-25)
+
+
+### Features
+
+* add Claude 4.6 models (Opus and Sonnet) ([0c21d9e](https://github.com/ThomasTartrau/n8n-nodes-claude-code-cli/commit/0c21d9edbb11db8f55300f802b64688840d69a41))
+
 # [1.2.0](https://github.com/ThomasTartrau/n8n-nodes-claude-code-cli/compare/v1.1.0...v1.2.0) (2026-01-10)
 
 
