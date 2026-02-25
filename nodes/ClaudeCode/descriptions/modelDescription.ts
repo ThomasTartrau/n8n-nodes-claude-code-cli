@@ -11,6 +11,9 @@ export const modelDescription: INodeProperties[] = [
 			{ name: "Opus (Latest)", value: "opus" },
 			{ name: "Sonnet (Latest)", value: "sonnet" },
 			{ name: "Haiku (Latest)", value: "haiku" },
+			// Claude 4.6 Series
+			{ name: "Claude Opus 4.6", value: "claude-opus-4-6" },
+			{ name: "Claude Sonnet 4.6", value: "claude-sonnet-4-6" },
 			// Claude 4.5 Series
 			{ name: "Claude Opus 4.5", value: "claude-opus-4-5-20251101" },
 			{ name: "Claude Sonnet 4.5", value: "claude-sonnet-4-5-20250929" },
