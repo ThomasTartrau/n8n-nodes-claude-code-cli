@@ -1,3 +1,10 @@
+# [1.4.0](https://github.com/ThomasTartrau/n8n-nodes-claude-code-cli/compare/v1.3.0...v1.4.0) (2026-02-26)
+
+
+### Features
+
+* add npm provenance statement for n8n compliance ([b2628ef](https://github.com/ThomasTartrau/n8n-nodes-claude-code-cli/commit/b2628ef06b64129c6784b36ce51b4d56a4a3be31))
+
 # [1.3.0](https://github.com/ThomasTartrau/n8n-nodes-claude-code-cli/compare/v1.2.0...v1.3.0) (2026-02-25)
 
 
