@@ -1,7 +1,12 @@
 /**
  * Connection mode types for Claude Code execution
  */
-export type ConnectionMode = "local" | "ssh" | "docker";
+export type ConnectionMode =
+	| "local"
+	| "ssh"
+	| "docker"
+	| "k8sEphemeral"
+	| "k8sPersistent";
 
 /**
  * Output format types supported by Claude Code CLI
@@ -239,6 +244,27 @@ export interface DockerCredentials {
 }
 
 /**
+ * Kubernetes credentials
+ */
+export interface K8sCredentials {
+	authMethod: "inCluster" | "kubeConfigFile" | "kubeConfigInline";
+	kubeConfigPath?: string;
+	kubeConfigContent?: string;
+	kubeContext?: string;
+	namespace: string;
+	image: string;
+	claudePath: string;
+	defaultWorkingDir: string;
+	claudeOAuthCredentials?: string;
+	envVars: string;
+	imagePullSecret?: string;
+	serviceAccountName?: string;
+	cpuLimit?: string;
+	memoryLimit?: string;
+	nodeSelector?: string;
+}
+
+/**
  * Command builder result
  */
 export interface CommandParts {
@@ -253,6 +279,10 @@ export interface CommandParts {
  */
 export interface ExecutionContext {
 	connectionMode: ConnectionMode;
-	credentials: LocalCredentials | SshCredentials | DockerCredentials;
+	credentials:
+		| LocalCredentials
+		| SshCredentials
+		| DockerCredentials
+		| K8sCredentials;
 	options: ClaudeCodeExecutionOptions;
 }
