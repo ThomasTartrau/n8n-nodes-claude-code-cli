@@ -13,6 +13,7 @@ export type {
 	LocalCredentials,
 	SshCredentials,
 	DockerCredentials,
+	K8sCredentials,
 	CommandParts,
 	ExecutionContext,
 	StreamEventType,

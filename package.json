@@ -10,7 +10,9 @@
 		"automation",
 		"anthropic",
 		"coding",
-		"development"
+		"development",
+		"kubernetes",
+		"k8s"
 	],
 	"license": "MIT",
 	"homepage": "https://github.com/ThomasTartrau/n8n-nodes-claude-code-cli",
@@ -20,7 +22,7 @@
 	},
 	"main": "dist/index.js",
 	"scripts": {
-		"build": "tsc && npm run copy:icons",
+		"build": "npm run typecheck && node esbuild.config.mjs && tsc --emitDeclarationOnly && npm run copy:icons",
 		"copy:icons": "cp -r icons dist/",
 		"dev": "tsc --watch",
 		"lint": "biome check .",
@@ -42,7 +44,9 @@
 		"credentials": [
 			"dist/credentials/ClaudeCodeLocalApi.credentials.js",
 			"dist/credentials/ClaudeCodeSshApi.credentials.js",
-			"dist/credentials/ClaudeCodeDockerApi.credentials.js"
+			"dist/credentials/ClaudeCodeDockerApi.credentials.js",
+			"dist/credentials/ClaudeCodeK8sApi.credentials.js",
+			"dist/credentials/ClaudeCodeK8sPersistentApi.credentials.js"
 		],
 		"nodes": [
 			"dist/nodes/ClaudeCode/ClaudeCode.node.js"
@@ -55,12 +59,14 @@
 		"@types/node": "^25.0.3",
 		"@types/ssh2": "^1.15.5",
 		"@vitest/coverage-v8": "^4.0.16",
+		"esbuild": "^0.27.3",
 		"semantic-release": "^25.0.2",
 		"testcontainers": "^11.11.0",
 		"typescript": "^5.9.3",
 		"vitest": "^4.0.16"
 	},
 	"dependencies": {
+		"@kubernetes/client-node": "^1.4.0",
 		"ssh2": "^1.17.0"
 	},
 	"peerDependencies": {

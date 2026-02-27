@@ -27,6 +27,7 @@ import type {
 	LocalCredentials,
 	SshCredentials,
 	DockerCredentials,
+	K8sCredentials,
 } from "./interfaces/index.js";
 
 export class ClaudeCode implements INodeType {
@@ -70,6 +71,24 @@ export class ClaudeCode implements INodeType {
 				displayOptions: {
 					show: {
 						connectionMode: ["docker"],
+					},
+				},
+			},
+			{
+				name: "claudeCodeK8sApi",
+				required: true,
+				displayOptions: {
+					show: {
+						connectionMode: ["k8sEphemeral"],
+					},
+				},
+			},
+			{
+				name: "claudeCodeK8sPersistentApi",
+				required: true,
+				displayOptions: {
+					show: {
+						connectionMode: ["k8sPersistent"],
 					},
 				},
 			},
@@ -119,7 +138,11 @@ export class ClaudeCode implements INodeType {
 			) as ClaudeCodeOperation;
 
 			// Get credentials based on connection mode
-			let credentials: LocalCredentials | SshCredentials | DockerCredentials;
+			let credentials:
+				| LocalCredentials
+				| SshCredentials
+				| DockerCredentials
+				| K8sCredentials;
 			switch (connectionMode) {
 				case "local":
 					credentials = await this.getCredentials(
@@ -136,6 +159,18 @@ export class ClaudeCode implements INodeType {
 				case "docker":
 					credentials = await this.getCredentials(
 						"claudeCodeDockerApi",
+						itemIndex,
+					);
+					break;
+				case "k8sEphemeral":
+					credentials = await this.getCredentials(
+						"claudeCodeK8sApi",
+						itemIndex,
+					);
+					break;
+				case "k8sPersistent":
+					credentials = await this.getCredentials(
+						"claudeCodeK8sPersistentApi",
 						itemIndex,
 					);
 					break;
@@ -172,6 +207,7 @@ export class ClaudeCode implements INodeType {
 			// Build output JSON
 			const outputJson: IDataObject = {
 				success: result.success,
+				connectionMode,
 				sessionId: result.sessionId,
 				output: result.output,
 				exitCode: result.exitCode,
