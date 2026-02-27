@@ -1,3 +1,10 @@
+# [1.5.0](https://github.com/ThomasTartrau/n8n-nodes-claude-code-cli/compare/v1.4.0...v1.5.0) (2026-02-27)
+
+
+### Features
+
+* add Kubernetes executor with ephemeral and persistent pod modes ([faba7d2](https://github.com/ThomasTartrau/n8n-nodes-claude-code-cli/commit/faba7d232c9d47c01ba422a5a2e6e54e6fae6d35))
+
 # [1.4.0](https://github.com/ThomasTartrau/n8n-nodes-claude-code-cli/compare/v1.3.0...v1.4.0) (2026-02-26)
 
 
