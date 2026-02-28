@@ -113,6 +113,28 @@ export const optionsDescription: INodeProperties[] = [
 					"Enable 1M token context window for analyzing very large codebases in a single pass. Only supported by Claude Opus 4.6, Sonnet 4.6, Sonnet 4.5, and Sonnet 4. Has no effect on other models.",
 			},
 			{
+				displayName: "Worktree Isolation",
+				name: "worktreeEnabled",
+				type: "boolean",
+				default: false,
+				description:
+					"Run Claude Code in an isolated git worktree. Each execution works on a separate copy of the repository, preventing conflicts with the main workspace. The worktree is automatically cleaned up if no changes are made.",
+			},
+			{
+				displayName: "Worktree Name",
+				name: "worktreeName",
+				type: "string",
+				default: "",
+				placeholder: "feature-auth",
+				description:
+					"Optional name for the worktree. If empty, Claude Code auto-generates a unique name. The worktree is created at <repo>/.claude/worktrees/<name>/.",
+				displayOptions: {
+					show: {
+						worktreeEnabled: [true],
+					},
+				},
+			},
+			{
 				displayName: "Additional Arguments",
 				name: "additionalArgs",
 				type: "string",

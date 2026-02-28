@@ -100,6 +100,15 @@ export function buildCommand(
 		args.push("--fallback-model", options.fallbackModel);
 	}
 
+	// Worktree isolation
+	if (options.worktree !== undefined) {
+		if (options.worktree) {
+			args.push("--worktree", options.worktree);
+		} else {
+			args.push("--worktree");
+		}
+	}
+
 	// Context files (via --add-dir for directories containing the files)
 	if (options.contextFiles && options.contextFiles.length > 0) {
 		const uniqueDirs = new Set<string>();

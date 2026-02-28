@@ -228,3 +228,41 @@ export const partialNewFlagsParams: Record<string, unknown> = {
 		fallbackModel: "claude-haiku-4-20250414",
 	},
 };
+
+/**
+ * Parameters with worktree enabled and custom name
+ */
+export const worktreeWithNameParams: Record<string, unknown> = {
+	prompt: "Test with worktree",
+	model: "",
+	toolPermissions: {},
+	options: {
+		worktreeEnabled: true,
+		worktreeName: "feature-auth",
+	},
+};
+
+/**
+ * Parameters with worktree enabled but no name (auto-generate)
+ */
+export const worktreeAutoNameParams: Record<string, unknown> = {
+	prompt: "Test with auto worktree",
+	model: "",
+	toolPermissions: {},
+	options: {
+		worktreeEnabled: true,
+		worktreeName: "",
+	},
+};
+
+/**
+ * Parameters with worktree disabled
+ */
+export const worktreeDisabledParams: Record<string, unknown> = {
+	prompt: "Test without worktree",
+	model: "",
+	toolPermissions: {},
+	options: {
+		worktreeEnabled: false,
+	},
+};

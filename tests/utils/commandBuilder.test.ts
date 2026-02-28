@@ -646,6 +646,60 @@ describe("commandBuilder", () => {
 			const verboseIdx = result.args.indexOf("--verbose");
 			expect(agentsIdx).toBeLessThan(verboseIdx);
 		});
+
+		it("should include --worktree with name when specified", () => {
+			const options: ClaudeCodeExecutionOptions = {
+				prompt: "Test",
+				outputFormat: "json",
+				worktree: "feature-auth",
+			};
+
+			const result = buildCommand(options, defaultCredentials);
+
+			expect(result.args).toContain("--worktree");
+			expect(result.args).toContain("feature-auth");
+		});
+
+		it("should include --worktree without name for auto-generation", () => {
+			const options: ClaudeCodeExecutionOptions = {
+				prompt: "Test",
+				outputFormat: "json",
+				worktree: "",
+			};
+
+			const result = buildCommand(options, defaultCredentials);
+
+			expect(result.args).toContain("--worktree");
+			const worktreeIdx = result.args.indexOf("--worktree");
+			const nextArg = result.args[worktreeIdx + 1];
+			expect(nextArg).not.toBe("feature-auth");
+		});
+
+		it("should not include --worktree when undefined", () => {
+			const options: ClaudeCodeExecutionOptions = {
+				prompt: "Test",
+				outputFormat: "json",
+			};
+
+			const result = buildCommand(options, defaultCredentials);
+
+			expect(result.args).not.toContain("--worktree");
+		});
+
+		it("should place --worktree before --add-dir", () => {
+			const options: ClaudeCodeExecutionOptions = {
+				prompt: "Test",
+				outputFormat: "json",
+				worktree: "my-worktree",
+				contextFiles: [{ path: "/project/src/file.ts" }],
+			};
+
+			const result = buildCommand(options, defaultCredentials);
+
+			const worktreeIdx = result.args.indexOf("--worktree");
+			const addDirIdx = result.args.indexOf("--add-dir");
+			expect(worktreeIdx).toBeLessThan(addDirIdx);
+		});
 	});
 
 	describe("buildShellCommand", () => {
