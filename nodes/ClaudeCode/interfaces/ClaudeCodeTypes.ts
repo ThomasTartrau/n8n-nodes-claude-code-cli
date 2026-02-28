@@ -58,6 +58,20 @@ export interface ContextFile {
 }
 
 /**
+ * Custom subagent definition for --agents flag
+ */
+export interface AgentDefinition {
+	description: string;
+	prompt: string;
+	tools?: string[];
+	disallowedTools?: string[];
+	model?: string;
+	permissionMode?: string;
+	maxTurns?: number;
+	memory?: string;
+}
+
+/**
  * Claude Code execution options
  */
 export interface ClaudeCodeExecutionOptions {
@@ -73,6 +87,7 @@ export interface ClaudeCodeExecutionOptions {
 	additionalArgs?: string[];
 	timeout?: number;
 	systemPrompt?: string;
+	agents?: Record<string, AgentDefinition>;
 }
 
 /**

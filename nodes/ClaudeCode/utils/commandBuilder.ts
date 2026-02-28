@@ -89,6 +89,11 @@ export function buildCommand(
 		});
 	}
 
+	// Agents (subagents)
+	if (options.agents && Object.keys(options.agents).length > 0) {
+		args.push("--agents", JSON.stringify(options.agents));
+	}
+
 	// Additional arguments
 	if (options.additionalArgs && options.additionalArgs.length > 0) {
 		args.push(...options.additionalArgs);

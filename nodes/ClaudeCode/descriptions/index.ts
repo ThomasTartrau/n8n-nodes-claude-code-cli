@@ -6,4 +6,5 @@ export { sessionDescription } from "./sessionDescription.js";
 export { permissionModeDescription } from "./permissionModeDescription.js";
 export { toolPermissionsDescription } from "./toolPermissionsDescription.js";
 export { modelDescription } from "./modelDescription.js";
+export { agentsDescription } from "./agentsDescription.js";
 export { optionsDescription } from "./optionsDescription.js";

@@ -373,6 +373,127 @@ describe("commandBuilder", () => {
 
 			expect(result.cwd).toBe("/override/path");
 		});
+
+		it("should not include --agents when agents is undefined", () => {
+			const options: ClaudeCodeExecutionOptions = {
+				prompt: "Test",
+				outputFormat: "json",
+			};
+
+			const result = buildCommand(options, defaultCredentials);
+
+			expect(result.args).not.toContain("--agents");
+		});
+
+		it("should not include --agents when agents is empty", () => {
+			const options: ClaudeCodeExecutionOptions = {
+				prompt: "Test",
+				outputFormat: "json",
+				agents: {},
+			};
+
+			const result = buildCommand(options, defaultCredentials);
+
+			expect(result.args).not.toContain("--agents");
+		});
+
+		it("should include --agents with JSON for a simple agent", () => {
+			const options: ClaudeCodeExecutionOptions = {
+				prompt: "Test",
+				outputFormat: "json",
+				agents: {
+					"code-reviewer": {
+						description: "Reviews code",
+						prompt: "You review code.",
+					},
+				},
+			};
+
+			const result = buildCommand(options, defaultCredentials);
+
+			const agentsIdx = result.args.indexOf("--agents");
+			expect(agentsIdx).toBeGreaterThan(-1);
+			const agentsJson = JSON.parse(result.args[agentsIdx + 1]);
+			expect(agentsJson["code-reviewer"].description).toBe("Reviews code");
+			expect(agentsJson["code-reviewer"].prompt).toBe("You review code.");
+		});
+
+		it("should include --agents with all fields for a full agent", () => {
+			const options: ClaudeCodeExecutionOptions = {
+				prompt: "Test",
+				outputFormat: "json",
+				agents: {
+					debugger: {
+						description: "Expert debugger",
+						prompt: "You debug issues.",
+						model: "sonnet",
+						tools: ["Read", "Grep"],
+						disallowedTools: ["Write"],
+						permissionMode: "plan",
+						maxTurns: 15,
+						memory: "project",
+					},
+				},
+			};
+
+			const result = buildCommand(options, defaultCredentials);
+
+			const agentsIdx = result.args.indexOf("--agents");
+			const agentsJson = JSON.parse(result.args[agentsIdx + 1]);
+			expect(agentsJson.debugger.model).toBe("sonnet");
+			expect(agentsJson.debugger.tools).toEqual(["Read", "Grep"]);
+			expect(agentsJson.debugger.disallowedTools).toEqual(["Write"]);
+			expect(agentsJson.debugger.permissionMode).toBe("plan");
+			expect(agentsJson.debugger.maxTurns).toBe(15);
+			expect(agentsJson.debugger.memory).toBe("project");
+		});
+
+		it("should include --agents with multiple agents", () => {
+			const options: ClaudeCodeExecutionOptions = {
+				prompt: "Test",
+				outputFormat: "json",
+				agents: {
+					reviewer: {
+						description: "Reviews code",
+						prompt: "You review.",
+					},
+					architect: {
+						description: "Designs systems",
+						prompt: "You design.",
+						model: "opus",
+					},
+				},
+			};
+
+			const result = buildCommand(options, defaultCredentials);
+
+			const agentsIdx = result.args.indexOf("--agents");
+			const agentsJson = JSON.parse(result.args[agentsIdx + 1]);
+			expect(Object.keys(agentsJson)).toHaveLength(2);
+			expect(agentsJson.reviewer).toBeDefined();
+			expect(agentsJson.architect).toBeDefined();
+			expect(agentsJson.architect.model).toBe("opus");
+		});
+
+		it("should place --agents before additional args", () => {
+			const options: ClaudeCodeExecutionOptions = {
+				prompt: "Test",
+				outputFormat: "json",
+				agents: {
+					helper: {
+						description: "Helps",
+						prompt: "You help.",
+					},
+				},
+				additionalArgs: ["--verbose"],
+			};
+
+			const result = buildCommand(options, defaultCredentials);
+
+			const agentsIdx = result.args.indexOf("--agents");
+			const verboseIdx = result.args.indexOf("--verbose");
+			expect(agentsIdx).toBeLessThan(verboseIdx);
+		});
 	});
 
 	describe("buildShellCommand", () => {
