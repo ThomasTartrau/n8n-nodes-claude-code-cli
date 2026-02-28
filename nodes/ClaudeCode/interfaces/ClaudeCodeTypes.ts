@@ -94,6 +94,7 @@ export interface ClaudeCodeExecutionOptions {
 	fallbackModel?: string;
 	agents?: Record<string, AgentDefinition>;
 	extendedContext?: boolean;
+	worktree?: string;
 }
 
 /**

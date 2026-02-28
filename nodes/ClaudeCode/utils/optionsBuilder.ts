@@ -194,5 +194,8 @@ export function buildExecutionOptions(
 		fallbackModel: (options.fallbackModel as string) || undefined,
 		agents,
 		extendedContext: options.extendedContext !== false,
+		worktree: options.worktreeEnabled
+			? (options.worktreeName as string) || ""
+			: undefined,
 	};
 }

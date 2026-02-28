@@ -15,6 +15,9 @@ import {
 	emptyAgentsParams,
 	newFlagsParams,
 	partialNewFlagsParams,
+	worktreeWithNameParams,
+	worktreeAutoNameParams,
+	worktreeDisabledParams,
 } from "../fixtures/executeFunctionsHelper.js";
 
 describe("optionsBuilder", () => {
@@ -472,6 +475,46 @@ describe("optionsBuilder", () => {
 
 			expect(result.agents?.["test-agent"].tools).toEqual(["Read", "Grep"]);
 			expect(result.agents?.["test-agent"].disallowedTools).toEqual(["Write"]);
+		});
+
+		it("should parse worktree with custom name", () => {
+			const context = createTestContext(
+				worktreeWithNameParams,
+			) as IExecuteFunctions;
+
+			const result = buildExecutionOptions(context, 0, "executePrompt");
+
+			expect(result.worktree).toBe("feature-auth");
+		});
+
+		it("should parse worktree with empty name for auto-generation", () => {
+			const context = createTestContext(
+				worktreeAutoNameParams,
+			) as IExecuteFunctions;
+
+			const result = buildExecutionOptions(context, 0, "executePrompt");
+
+			expect(result.worktree).toBe("");
+		});
+
+		it("should not include worktree when disabled", () => {
+			const context = createTestContext(
+				worktreeDisabledParams,
+			) as IExecuteFunctions;
+
+			const result = buildExecutionOptions(context, 0, "executePrompt");
+
+			expect(result.worktree).toBeUndefined();
+		});
+
+		it("should not include worktree when not set", () => {
+			const context = createTestContext(
+				defaultExecutePromptParams,
+			) as IExecuteFunctions;
+
+			const result = buildExecutionOptions(context, 0, "executePrompt");
+
+			expect(result.worktree).toBeUndefined();
 		});
 	});
 });
