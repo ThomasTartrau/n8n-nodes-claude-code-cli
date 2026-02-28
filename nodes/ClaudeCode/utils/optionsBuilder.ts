@@ -1,5 +1,6 @@
 import type { IExecuteFunctions } from "n8n-workflow";
 import type {
+	AgentDefinition,
 	ClaudeCodeExecutionOptions,
 	ClaudeCodeOperation,
 	ToolPermissions,
@@ -114,6 +115,65 @@ export function buildExecutionOptions(
 			? (permissionModeRaw as PermissionMode)
 			: undefined;
 
+	// Parse agents (subagents)
+	const agentsData = context.getNodeParameter("agents", itemIndex, {
+		agentsList: [],
+	}) as {
+		agentsList: Array<{
+			name: string;
+			description: string;
+			prompt: string;
+			model: string;
+			tools: string;
+			disallowedTools: string;
+			permissionMode: string;
+			maxTurns: number;
+			memory: string;
+		}>;
+	};
+
+	let agents: Record<string, AgentDefinition> | undefined;
+	if (agentsData.agentsList && agentsData.agentsList.length > 0) {
+		agents = {};
+		for (const agent of agentsData.agentsList) {
+			const def: AgentDefinition = {
+				description: agent.description,
+				prompt: agent.prompt,
+			};
+
+			if (agent.tools) {
+				def.tools = agent.tools
+					.split(",")
+					.map((t: string) => t.trim())
+					.filter(Boolean);
+			}
+			if (agent.disallowedTools) {
+				def.disallowedTools = agent.disallowedTools
+					.split(",")
+					.map((t: string) => t.trim())
+					.filter(Boolean);
+			}
+
+			if (agent.model && agent.model !== "inherit") {
+				def.model = agent.model;
+			}
+
+			if (agent.permissionMode) {
+				def.permissionMode = agent.permissionMode;
+			}
+
+			if (agent.maxTurns && agent.maxTurns > 0) {
+				def.maxTurns = agent.maxTurns;
+			}
+
+			if (agent.memory) {
+				def.memory = agent.memory;
+			}
+
+			agents[agent.name] = def;
+		}
+	}
+
 	return {
 		prompt,
 		workingDirectory: options.workingDirectory as string | undefined,
@@ -127,5 +187,6 @@ export function buildExecutionOptions(
 		additionalArgs: additionalArgs.length > 0 ? additionalArgs : undefined,
 		timeout: (options.timeout as number) || 300,
 		systemPrompt: (options.systemPrompt as string) || undefined,
+		agents,
 	};
 }

@@ -305,6 +305,11 @@ export function buildClaudeArgs(options: ClaudeCodeExecutionOptions): string[] {
 		});
 	}
 
+	// Agents (subagents)
+	if (options.agents && Object.keys(options.agents).length > 0) {
+		args.push("--agents", JSON.stringify(options.agents));
+	}
+
 	if (options.additionalArgs && options.additionalArgs.length > 0) {
 		args.push(...options.additionalArgs);
 	}

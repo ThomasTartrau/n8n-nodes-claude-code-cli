@@ -16,6 +16,7 @@ import {
 	permissionModeDescription,
 	toolPermissionsDescription,
 	modelDescription,
+	agentsDescription,
 	optionsDescription,
 } from "./descriptions/index.js";
 
@@ -117,6 +118,9 @@ export class ClaudeCode implements INodeType {
 
 			// Model selection
 			...modelDescription,
+
+			// Custom subagents
+			...agentsDescription,
 
 			// Additional options
 			...optionsDescription,
