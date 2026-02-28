@@ -99,6 +99,11 @@ export function buildCommand(
 		args.push(...options.additionalArgs);
 	}
 
+	// Extended context (1M tokens)
+	if (options.extendedContext === false) {
+		env.CLAUDE_CODE_DISABLE_1M_CONTEXT = "1";
+	}
+
 	// Parse env vars from local credentials
 	if ("envVars" in credentials && credentials.envVars) {
 		const envVarsString = credentials.envVars as string;

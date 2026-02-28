@@ -88,6 +88,7 @@ export interface ClaudeCodeExecutionOptions {
 	timeout?: number;
 	systemPrompt?: string;
 	agents?: Record<string, AgentDefinition>;
+	extendedContext?: boolean;
 }
 
 /**

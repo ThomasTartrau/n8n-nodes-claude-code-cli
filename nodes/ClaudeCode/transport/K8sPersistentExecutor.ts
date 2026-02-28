@@ -201,10 +201,14 @@ export class K8sPersistentExecutor implements IClaudeCodeExecutor {
 						"/workspace";
 
 					// Build the full command with cd to workdir
+					const envPrefix =
+						options.extendedContext === false
+							? "export CLAUDE_CODE_DISABLE_1M_CONTEXT=1 && "
+							: "";
 					const command = [
 						"sh",
 						"-c",
-						`cd ${workDir} && ${claudePath} ${claudeArgs.map((a) => `'${a.replace(/'/g, "'\\''")}'`).join(" ")}`,
+						`${envPrefix}cd ${workDir} && ${claudePath} ${claudeArgs.map((a) => `'${a.replace(/'/g, "'\\''")}'`).join(" ")}`,
 					];
 
 					return this.execInPod(clients, namespace, command).then(

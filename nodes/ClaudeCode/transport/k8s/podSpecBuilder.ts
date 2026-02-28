@@ -120,6 +120,14 @@ export function buildEphemeralPodSpec(
 	const envVars = buildEnvVars(credentials);
 	const limits = buildResourceLimits(credentials);
 
+	// Extended context (1M tokens)
+	if (options.extendedContext === false) {
+		envVars.push({
+			name: "CLAUDE_CODE_DISABLE_1M_CONTEXT",
+			value: "1",
+		});
+	}
+
 	const credentialPrefix = buildCredentialInjectionPrefix(credentials);
 
 	const container: V1Container = credentialPrefix
