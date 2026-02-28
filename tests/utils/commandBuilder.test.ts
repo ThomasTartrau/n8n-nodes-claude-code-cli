@@ -475,6 +475,158 @@ describe("commandBuilder", () => {
 			expect(agentsJson.architect.model).toBe("opus");
 		});
 
+		it("should include --append-system-prompt-file when systemPromptFile is set", () => {
+			const options: ClaudeCodeExecutionOptions = {
+				prompt: "Test",
+				outputFormat: "json",
+				systemPromptFile: "/path/to/prompt.txt",
+			};
+
+			const result = buildCommand(options, defaultCredentials);
+
+			expect(result.args).toContain("--append-system-prompt-file");
+			expect(result.args).toContain("/path/to/prompt.txt");
+		});
+
+		it("should not include --append-system-prompt-file when empty", () => {
+			const options: ClaudeCodeExecutionOptions = {
+				prompt: "Test",
+				outputFormat: "json",
+			};
+
+			const result = buildCommand(options, defaultCredentials);
+
+			expect(result.args).not.toContain("--append-system-prompt-file");
+		});
+
+		it("should include both system prompt and system prompt file", () => {
+			const options: ClaudeCodeExecutionOptions = {
+				prompt: "Test",
+				outputFormat: "json",
+				systemPrompt: "Be concise",
+				systemPromptFile: "/path/to/extra-rules.txt",
+			};
+
+			const result = buildCommand(options, defaultCredentials);
+
+			expect(result.args).toContain("--append-system-prompt");
+			expect(result.args).toContain("Be concise");
+			expect(result.args).toContain("--append-system-prompt-file");
+			expect(result.args).toContain("/path/to/extra-rules.txt");
+		});
+
+		it("should include --verbose when verbose is true and output is not stream-json", () => {
+			const options: ClaudeCodeExecutionOptions = {
+				prompt: "Test",
+				outputFormat: "json",
+				verbose: true,
+			};
+
+			const result = buildCommand(options, defaultCredentials);
+
+			expect(result.args).toContain("--verbose");
+		});
+
+		it("should not duplicate --verbose when stream-json already adds it", () => {
+			const options: ClaudeCodeExecutionOptions = {
+				prompt: "Test",
+				outputFormat: "stream-json",
+				verbose: true,
+			};
+
+			const result = buildCommand(options, defaultCredentials);
+
+			const verboseCount = result.args.filter((a) => a === "--verbose").length;
+			expect(verboseCount).toBe(1);
+		});
+
+		it("should not include --verbose when verbose is false", () => {
+			const options: ClaudeCodeExecutionOptions = {
+				prompt: "Test",
+				outputFormat: "json",
+				verbose: false,
+			};
+
+			const result = buildCommand(options, defaultCredentials);
+
+			expect(result.args).not.toContain("--verbose");
+		});
+
+		it("should include --max-budget-usd when specified", () => {
+			const options: ClaudeCodeExecutionOptions = {
+				prompt: "Test",
+				outputFormat: "json",
+				maxBudgetUsd: 5.5,
+			};
+
+			const result = buildCommand(options, defaultCredentials);
+
+			expect(result.args).toContain("--max-budget-usd");
+			expect(result.args).toContain("5.5");
+		});
+
+		it("should not include --max-budget-usd when zero", () => {
+			const options: ClaudeCodeExecutionOptions = {
+				prompt: "Test",
+				outputFormat: "json",
+				maxBudgetUsd: 0,
+			};
+
+			const result = buildCommand(options, defaultCredentials);
+
+			expect(result.args).not.toContain("--max-budget-usd");
+		});
+
+		it("should include --json-schema when specified", () => {
+			const schema =
+				'{"type":"object","properties":{"summary":{"type":"string"}}}';
+			const options: ClaudeCodeExecutionOptions = {
+				prompt: "Test",
+				outputFormat: "json",
+				jsonSchema: schema,
+			};
+
+			const result = buildCommand(options, defaultCredentials);
+
+			expect(result.args).toContain("--json-schema");
+			expect(result.args).toContain(schema);
+		});
+
+		it("should not include --json-schema when empty", () => {
+			const options: ClaudeCodeExecutionOptions = {
+				prompt: "Test",
+				outputFormat: "json",
+			};
+
+			const result = buildCommand(options, defaultCredentials);
+
+			expect(result.args).not.toContain("--json-schema");
+		});
+
+		it("should include --fallback-model when specified", () => {
+			const options: ClaudeCodeExecutionOptions = {
+				prompt: "Test",
+				outputFormat: "json",
+				fallbackModel: "claude-sonnet-4-20250514",
+			};
+
+			const result = buildCommand(options, defaultCredentials);
+
+			expect(result.args).toContain("--fallback-model");
+			expect(result.args).toContain("claude-sonnet-4-20250514");
+		});
+
+		it("should not include --fallback-model when empty", () => {
+			const options: ClaudeCodeExecutionOptions = {
+				prompt: "Test",
+				outputFormat: "json",
+			};
+
+			const result = buildCommand(options, defaultCredentials);
+
+			expect(result.args).not.toContain("--fallback-model");
+		});
+
 		it("should place --agents before additional args", () => {
 			const options: ClaudeCodeExecutionOptions = {
 				prompt: "Test",
