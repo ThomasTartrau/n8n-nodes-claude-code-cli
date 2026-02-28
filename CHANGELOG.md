@@ -1,3 +1,10 @@
+# [1.6.0](https://github.com/ThomasTartrau/n8n-nodes-claude-code-cli/compare/v1.5.0...v1.6.0) (2026-02-28)
+
+
+### Features
+
+* add worktree isolation, new CLI flags, 1M context window, and custom subagents support ([2b59e77](https://github.com/ThomasTartrau/n8n-nodes-claude-code-cli/commit/2b59e7768f9e67ea5af43e8d7d263742657fe743))
+
 # [1.5.0](https://github.com/ThomasTartrau/n8n-nodes-claude-code-cli/compare/v1.4.0...v1.5.0) (2026-02-27)
 
 
