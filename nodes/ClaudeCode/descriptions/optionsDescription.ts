@@ -58,6 +58,14 @@ export const optionsDescription: INodeProperties[] = [
 					"Additional system prompt to append to Claude Code default system prompt",
 			},
 			{
+				displayName: "Extended Context (1M Tokens)",
+				name: "extendedContext",
+				type: "boolean",
+				default: true,
+				description:
+					"Enable 1M token context window for analyzing very large codebases in a single pass. Only supported by Claude Opus 4.6, Sonnet 4.6, Sonnet 4.5, and Sonnet 4. Has no effect on other models.",
+			},
+			{
 				displayName: "Additional Arguments",
 				name: "additionalArgs",
 				type: "string",

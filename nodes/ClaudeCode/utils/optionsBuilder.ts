@@ -188,5 +188,6 @@ export function buildExecutionOptions(
 		timeout: (options.timeout as number) || 300,
 		systemPrompt: (options.systemPrompt as string) || undefined,
 		agents,
+		extendedContext: options.extendedContext !== false,
 	};
 }
