@@ -58,6 +58,53 @@ export const optionsDescription: INodeProperties[] = [
 					"Additional system prompt to append to Claude Code default system prompt",
 			},
 			{
+				displayName: "System Prompt File",
+				name: "systemPromptFile",
+				type: "string",
+				default: "",
+				placeholder: "/path/to/system-prompt.txt",
+				description:
+					"Path to a file containing additional system prompt text to append to Claude Code default system prompt. Use this instead of inline System Prompt for long or reusable prompts.",
+			},
+			{
+				displayName: "Verbose",
+				name: "verbose",
+				type: "boolean",
+				default: false,
+				description:
+					"Enable verbose logging. Automatically enabled when Output Format is Stream JSON. Useful for debugging in JSON or Text output modes.",
+			},
+			{
+				displayName: "Max Budget (USD)",
+				name: "maxBudgetUsd",
+				type: "number",
+				default: 0,
+				description:
+					"Maximum dollar amount to spend before stopping execution. 0 means unlimited. Critical for controlling costs in automated workflows.",
+			},
+			{
+				displayName: "JSON Schema",
+				name: "jsonSchema",
+				type: "string",
+				typeOptions: {
+					rows: 4,
+				},
+				default: "",
+				placeholder:
+					'{"type":"object","properties":{"summary":{"type":"string"}}}',
+				description:
+					"JSON schema for validated structured output. Claude will return JSON matching this schema. Must be a valid JSON schema string.",
+			},
+			{
+				displayName: "Fallback Model",
+				name: "fallbackModel",
+				type: "string",
+				default: "",
+				placeholder: "claude-sonnet-4-20250514",
+				description:
+					"Fallback model to use when the primary model is overloaded or unavailable. Improves resilience in production workflows.",
+			},
+			{
 				displayName: "Extended Context (1M Tokens)",
 				name: "extendedContext",
 				type: "boolean",

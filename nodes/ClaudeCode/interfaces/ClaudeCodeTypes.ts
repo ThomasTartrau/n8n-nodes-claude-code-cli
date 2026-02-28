@@ -87,6 +87,11 @@ export interface ClaudeCodeExecutionOptions {
 	additionalArgs?: string[];
 	timeout?: number;
 	systemPrompt?: string;
+	systemPromptFile?: string;
+	verbose?: boolean;
+	maxBudgetUsd?: number;
+	jsonSchema?: string;
+	fallbackModel?: string;
 	agents?: Record<string, AgentDefinition>;
 	extendedContext?: boolean;
 }

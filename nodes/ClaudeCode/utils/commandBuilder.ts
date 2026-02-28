@@ -70,9 +70,34 @@ export function buildCommand(
 		);
 	}
 
-	// System prompt append
+	// System prompt append (inline text)
 	if (options.systemPrompt) {
 		args.push("--append-system-prompt", options.systemPrompt);
+	}
+
+	// System prompt append (from file)
+	if (options.systemPromptFile) {
+		args.push("--append-system-prompt-file", options.systemPromptFile);
+	}
+
+	// Verbose mode (explicit user toggle, independent of stream-json auto-verbose)
+	if (options.verbose && options.outputFormat !== "stream-json") {
+		args.push("--verbose");
+	}
+
+	// Max budget (cost control)
+	if (options.maxBudgetUsd && options.maxBudgetUsd > 0) {
+		args.push("--max-budget-usd", String(options.maxBudgetUsd));
+	}
+
+	// JSON schema (structured output)
+	if (options.jsonSchema) {
+		args.push("--json-schema", options.jsonSchema);
+	}
+
+	// Fallback model
+	if (options.fallbackModel) {
+		args.push("--fallback-model", options.fallbackModel);
 	}
 
 	// Context files (via --add-dir for directories containing the files)

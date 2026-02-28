@@ -199,3 +199,32 @@ export const emptyAgentsParams: Record<string, unknown> = {
 	options: {},
 	agents: { agentsList: [] },
 };
+
+/**
+ * Parameters with new CLI flags (system prompt file, verbose, max budget, json schema, fallback model)
+ */
+export const newFlagsParams: Record<string, unknown> = {
+	prompt: "Test with new flags",
+	model: "",
+	toolPermissions: {},
+	options: {
+		systemPromptFile: "/path/to/system-prompt.txt",
+		verbose: true,
+		maxBudgetUsd: 10.5,
+		jsonSchema: '{"type":"object","properties":{"result":{"type":"string"}}}',
+		fallbackModel: "claude-sonnet-4-20250514",
+	},
+};
+
+/**
+ * Parameters with partial new CLI flags
+ */
+export const partialNewFlagsParams: Record<string, unknown> = {
+	prompt: "Test with partial flags",
+	model: "",
+	toolPermissions: {},
+	options: {
+		maxBudgetUsd: 2.0,
+		fallbackModel: "claude-haiku-4-20250414",
+	},
+};

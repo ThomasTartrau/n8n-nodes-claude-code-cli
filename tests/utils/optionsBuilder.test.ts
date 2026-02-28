@@ -13,6 +13,8 @@ import {
 	fullAgentParams,
 	multipleAgentsParams,
 	emptyAgentsParams,
+	newFlagsParams,
+	partialNewFlagsParams,
 } from "../fixtures/executeFunctionsHelper.js";
 
 describe("optionsBuilder", () => {
@@ -365,6 +367,76 @@ describe("optionsBuilder", () => {
 			const result = buildExecutionOptions(context, 0, "executePrompt");
 
 			expect(result.agents).toBeUndefined();
+		});
+
+		it("should parse systemPromptFile from options", () => {
+			const context = createTestContext(newFlagsParams) as IExecuteFunctions;
+
+			const result = buildExecutionOptions(context, 0, "executePrompt");
+
+			expect(result.systemPromptFile).toBe("/path/to/system-prompt.txt");
+		});
+
+		it("should parse verbose from options", () => {
+			const context = createTestContext(newFlagsParams) as IExecuteFunctions;
+
+			const result = buildExecutionOptions(context, 0, "executePrompt");
+
+			expect(result.verbose).toBe(true);
+		});
+
+		it("should parse maxBudgetUsd from options", () => {
+			const context = createTestContext(newFlagsParams) as IExecuteFunctions;
+
+			const result = buildExecutionOptions(context, 0, "executePrompt");
+
+			expect(result.maxBudgetUsd).toBe(10.5);
+		});
+
+		it("should parse jsonSchema from options", () => {
+			const context = createTestContext(newFlagsParams) as IExecuteFunctions;
+
+			const result = buildExecutionOptions(context, 0, "executePrompt");
+
+			expect(result.jsonSchema).toBe(
+				'{"type":"object","properties":{"result":{"type":"string"}}}',
+			);
+		});
+
+		it("should parse fallbackModel from options", () => {
+			const context = createTestContext(newFlagsParams) as IExecuteFunctions;
+
+			const result = buildExecutionOptions(context, 0, "executePrompt");
+
+			expect(result.fallbackModel).toBe("claude-sonnet-4-20250514");
+		});
+
+		it("should leave new flags undefined when not set", () => {
+			const context = createTestContext(
+				defaultExecutePromptParams,
+			) as IExecuteFunctions;
+
+			const result = buildExecutionOptions(context, 0, "executePrompt");
+
+			expect(result.systemPromptFile).toBeUndefined();
+			expect(result.verbose).toBeUndefined();
+			expect(result.maxBudgetUsd).toBeUndefined();
+			expect(result.jsonSchema).toBeUndefined();
+			expect(result.fallbackModel).toBeUndefined();
+		});
+
+		it("should handle partial new flags", () => {
+			const context = createTestContext(
+				partialNewFlagsParams,
+			) as IExecuteFunctions;
+
+			const result = buildExecutionOptions(context, 0, "executePrompt");
+
+			expect(result.maxBudgetUsd).toBe(2.0);
+			expect(result.fallbackModel).toBe("claude-haiku-4-20250414");
+			expect(result.systemPromptFile).toBeUndefined();
+			expect(result.verbose).toBeUndefined();
+			expect(result.jsonSchema).toBeUndefined();
 		});
 
 		it("should omit model inherit from agent config", () => {

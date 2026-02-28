@@ -187,6 +187,11 @@ export function buildExecutionOptions(
 		additionalArgs: additionalArgs.length > 0 ? additionalArgs : undefined,
 		timeout: (options.timeout as number) || 300,
 		systemPrompt: (options.systemPrompt as string) || undefined,
+		systemPromptFile: (options.systemPromptFile as string) || undefined,
+		verbose: (options.verbose as boolean) || undefined,
+		maxBudgetUsd: (options.maxBudgetUsd as number) || undefined,
+		jsonSchema: (options.jsonSchema as string) || undefined,
+		fallbackModel: (options.fallbackModel as string) || undefined,
 		agents,
 		extendedContext: options.extendedContext !== false,
 	};
