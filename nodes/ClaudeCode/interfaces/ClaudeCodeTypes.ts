@@ -72,6 +72,38 @@ export interface AgentDefinition {
 }
 
 /**
+ * MCP server definition for stdio transport
+ */
+export interface McpServerStdio {
+	command: string;
+	args?: string[];
+	env?: Record<string, string>;
+}
+
+/**
+ * MCP server definition for HTTP transport
+ */
+export interface McpServerHttp {
+	type: "http";
+	url: string;
+	headers?: Record<string, string>;
+}
+
+/**
+ * Union type for MCP server definitions
+ */
+export type McpServerDefinition = McpServerStdio | McpServerHttp;
+
+/**
+ * MCP configuration for Claude Code CLI
+ */
+export interface McpConfig {
+	inlineServers?: Record<string, McpServerDefinition>;
+	configFilePaths?: string[];
+	strictMode?: boolean;
+}
+
+/**
  * Claude Code execution options
  */
 export interface ClaudeCodeExecutionOptions {
@@ -93,6 +125,7 @@ export interface ClaudeCodeExecutionOptions {
 	jsonSchema?: string;
 	fallbackModel?: string;
 	agents?: Record<string, AgentDefinition>;
+	mcpConfig?: McpConfig;
 	extendedContext?: boolean;
 	worktree?: string;
 }

@@ -266,3 +266,184 @@ export const worktreeDisabledParams: Record<string, unknown> = {
 		worktreeEnabled: false,
 	},
 };
+
+/**
+ * Parameters with a single stdio MCP server
+ */
+export const singleMcpStdioServerParams: Record<string, unknown> = {
+	prompt: "Test with MCP stdio",
+	model: "",
+	toolPermissions: {},
+	options: {},
+	agents: { agentsList: [] },
+	mcpServers: {
+		serversList: [
+			{
+				name: "slack",
+				serverType: "stdio",
+				command: "npx -y @modelcontextprotocol/server-slack",
+				args: "--port,3000",
+				env: '{"SLACK_TOKEN":"xoxb-test-123"}',
+				url: "",
+				headers: "",
+			},
+		],
+	},
+	mcpConfigFilePaths: "",
+	mcpStrictMode: false,
+};
+
+/**
+ * Parameters with a single HTTP MCP server
+ */
+export const singleMcpHttpServerParams: Record<string, unknown> = {
+	prompt: "Test with MCP http",
+	model: "",
+	toolPermissions: {},
+	options: {},
+	agents: { agentsList: [] },
+	mcpServers: {
+		serversList: [
+			{
+				name: "remote-api",
+				serverType: "http",
+				command: "",
+				args: "",
+				env: "",
+				url: "https://mcp.example.com/sse",
+				headers: '{"Authorization":"Bearer token-123"}',
+			},
+		],
+	},
+	mcpConfigFilePaths: "",
+	mcpStrictMode: false,
+};
+
+/**
+ * Parameters with multiple MCP servers (mixed types)
+ */
+export const multipleMcpServersParams: Record<string, unknown> = {
+	prompt: "Test with multiple MCP",
+	model: "",
+	toolPermissions: {},
+	options: {},
+	agents: { agentsList: [] },
+	mcpServers: {
+		serversList: [
+			{
+				name: "slack",
+				serverType: "stdio",
+				command: "npx -y @modelcontextprotocol/server-slack",
+				args: "",
+				env: '{"SLACK_TOKEN":"xoxb-test"}',
+				url: "",
+				headers: "",
+			},
+			{
+				name: "remote",
+				serverType: "http",
+				command: "",
+				args: "",
+				env: "",
+				url: "https://mcp.example.com/sse",
+				headers: "",
+			},
+		],
+	},
+	mcpConfigFilePaths: "",
+	mcpStrictMode: false,
+};
+
+/**
+ * Parameters with MCP config file paths only
+ */
+export const mcpConfigFilePathsParams: Record<string, unknown> = {
+	prompt: "Test with MCP config files",
+	model: "",
+	toolPermissions: {},
+	options: {},
+	agents: { agentsList: [] },
+	mcpServers: { serversList: [] },
+	mcpConfigFilePaths: "/path/to/mcp.json, /path/to/other.json",
+	mcpStrictMode: false,
+};
+
+/**
+ * Parameters with MCP strict mode only
+ */
+export const mcpStrictModeParams: Record<string, unknown> = {
+	prompt: "Test with MCP strict",
+	model: "",
+	toolPermissions: {},
+	options: {},
+	agents: { agentsList: [] },
+	mcpServers: { serversList: [] },
+	mcpConfigFilePaths: "",
+	mcpStrictMode: true,
+};
+
+/**
+ * Parameters with empty MCP servers (no MCP config should be set)
+ */
+export const emptyMcpServersParams: Record<string, unknown> = {
+	prompt: "Test without MCP",
+	model: "",
+	toolPermissions: {},
+	options: {},
+	agents: { agentsList: [] },
+	mcpServers: { serversList: [] },
+	mcpConfigFilePaths: "",
+	mcpStrictMode: false,
+};
+
+/**
+ * Parameters with full MCP config (inline + file paths + strict)
+ */
+export const fullMcpConfigParams: Record<string, unknown> = {
+	prompt: "Test full MCP config",
+	model: "",
+	toolPermissions: {},
+	options: {},
+	agents: { agentsList: [] },
+	mcpServers: {
+		serversList: [
+			{
+				name: "slack",
+				serverType: "stdio",
+				command: "npx -y @modelcontextprotocol/server-slack",
+				args: "--verbose",
+				env: '{"SLACK_TOKEN":"xoxb-test"}',
+				url: "",
+				headers: "",
+			},
+		],
+	},
+	mcpConfigFilePaths: "/path/to/extra.json",
+	mcpStrictMode: true,
+};
+
+/**
+ * Parameters with a command that includes inline args (split test)
+ */
+export const mcpCommandWithInlineArgsParams: Record<string, unknown> = {
+	prompt: "Test MCP command splitting",
+	model: "",
+	toolPermissions: {},
+	options: {},
+	agents: { agentsList: [] },
+	mcpServers: {
+		serversList: [
+			{
+				name: "context7",
+				serverType: "stdio",
+				command: "npx -y @upstash/context7-mcp --api-key sk-123",
+				args: "",
+				env: "",
+				url: "",
+				headers: "",
+			},
+		],
+	},
+	mcpConfigFilePaths: "",
+	mcpStrictMode: false,
+};

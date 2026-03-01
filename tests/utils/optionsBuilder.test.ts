@@ -18,6 +18,14 @@ import {
 	worktreeWithNameParams,
 	worktreeAutoNameParams,
 	worktreeDisabledParams,
+	singleMcpStdioServerParams,
+	singleMcpHttpServerParams,
+	multipleMcpServersParams,
+	mcpConfigFilePathsParams,
+	mcpStrictModeParams,
+	emptyMcpServersParams,
+	fullMcpConfigParams,
+	mcpCommandWithInlineArgsParams,
 } from "../fixtures/executeFunctionsHelper.js";
 
 describe("optionsBuilder", () => {
@@ -515,6 +523,218 @@ describe("optionsBuilder", () => {
 			const result = buildExecutionOptions(context, 0, "executePrompt");
 
 			expect(result.worktree).toBeUndefined();
+		});
+
+		it("should parse a single stdio MCP server and split command", () => {
+			const context = createTestContext(
+				singleMcpStdioServerParams,
+			) as IExecuteFunctions;
+
+			const result = buildExecutionOptions(context, 0, "executePrompt");
+
+			expect(result.mcpConfig).toBeDefined();
+			expect(result.mcpConfig?.inlineServers?.slack).toBeDefined();
+			const server = result.mcpConfig?.inlineServers?.slack as {
+				command: string;
+				args?: string[];
+				env?: Record<string, string>;
+			};
+			expect(server.command).toBe("npx");
+			expect(server.args).toEqual([
+				"-y",
+				"@modelcontextprotocol/server-slack",
+				"--port",
+				"3000",
+			]);
+			expect(server.env).toEqual({ SLACK_TOKEN: "xoxb-test-123" });
+		});
+
+		it("should parse a single HTTP MCP server", () => {
+			const context = createTestContext(
+				singleMcpHttpServerParams,
+			) as IExecuteFunctions;
+
+			const result = buildExecutionOptions(context, 0, "executePrompt");
+
+			expect(result.mcpConfig).toBeDefined();
+			const server = result.mcpConfig?.inlineServers?.["remote-api"] as {
+				type: string;
+				url: string;
+				headers?: Record<string, string>;
+			};
+			expect(server.type).toBe("http");
+			expect(server.url).toBe("https://mcp.example.com/sse");
+			expect(server.headers).toEqual({
+				Authorization: "Bearer token-123",
+			});
+		});
+
+		it("should parse multiple MCP servers of mixed types", () => {
+			const context = createTestContext(
+				multipleMcpServersParams,
+			) as IExecuteFunctions;
+
+			const result = buildExecutionOptions(context, 0, "executePrompt");
+
+			expect(result.mcpConfig?.inlineServers).toBeDefined();
+			expect(Object.keys(result.mcpConfig?.inlineServers ?? {})).toHaveLength(
+				2,
+			);
+			expect(result.mcpConfig?.inlineServers?.slack).toBeDefined();
+			expect(result.mcpConfig?.inlineServers?.remote).toBeDefined();
+		});
+
+		it("should parse MCP config file paths", () => {
+			const context = createTestContext(
+				mcpConfigFilePathsParams,
+			) as IExecuteFunctions;
+
+			const result = buildExecutionOptions(context, 0, "executePrompt");
+
+			expect(result.mcpConfig).toBeDefined();
+			expect(result.mcpConfig?.configFilePaths).toEqual([
+				"/path/to/mcp.json",
+				"/path/to/other.json",
+			]);
+		});
+
+		it("should parse MCP strict mode", () => {
+			const context = createTestContext(
+				mcpStrictModeParams,
+			) as IExecuteFunctions;
+
+			const result = buildExecutionOptions(context, 0, "executePrompt");
+
+			expect(result.mcpConfig).toBeDefined();
+			expect(result.mcpConfig?.strictMode).toBe(true);
+		});
+
+		it("should not include mcpConfig when no MCP params defined", () => {
+			const context = createTestContext(
+				emptyMcpServersParams,
+			) as IExecuteFunctions;
+
+			const result = buildExecutionOptions(context, 0, "executePrompt");
+
+			expect(result.mcpConfig).toBeUndefined();
+		});
+
+		it("should combine inline servers, file paths, and strict mode", () => {
+			const context = createTestContext(
+				fullMcpConfigParams,
+			) as IExecuteFunctions;
+
+			const result = buildExecutionOptions(context, 0, "executePrompt");
+
+			expect(result.mcpConfig).toBeDefined();
+			expect(result.mcpConfig?.inlineServers?.slack).toBeDefined();
+			expect(result.mcpConfig?.configFilePaths).toEqual([
+				"/path/to/extra.json",
+			]);
+			expect(result.mcpConfig?.strictMode).toBe(true);
+		});
+
+		it("should trim and filter MCP config file paths", () => {
+			const params = {
+				...defaultExecutePromptParams,
+				mcpServers: { serversList: [] },
+				mcpConfigFilePaths: "  /path/one.json  ,  , /path/two.json  ",
+				mcpStrictMode: false,
+			};
+			const context = createTestContext(params) as IExecuteFunctions;
+
+			const result = buildExecutionOptions(context, 0, "executePrompt");
+
+			expect(result.mcpConfig?.configFilePaths).toEqual([
+				"/path/one.json",
+				"/path/two.json",
+			]);
+		});
+
+		it("should split full command into executable and args", () => {
+			const context = createTestContext(
+				mcpCommandWithInlineArgsParams,
+			) as IExecuteFunctions;
+
+			const result = buildExecutionOptions(context, 0, "executePrompt");
+
+			const server = result.mcpConfig?.inlineServers?.context7 as {
+				command: string;
+				args?: string[];
+			};
+			expect(server.command).toBe("npx");
+			expect(server.args).toEqual([
+				"-y",
+				"@upstash/context7-mcp",
+				"--api-key",
+				"sk-123",
+			]);
+		});
+
+		it("should omit optional stdio fields when empty", () => {
+			const params = {
+				...defaultExecutePromptParams,
+				mcpServers: {
+					serversList: [
+						{
+							name: "minimal",
+							serverType: "stdio",
+							command: "my-server",
+							args: "",
+							env: "",
+							url: "",
+							headers: "",
+						},
+					],
+				},
+				mcpConfigFilePaths: "",
+				mcpStrictMode: false,
+			};
+			const context = createTestContext(params) as IExecuteFunctions;
+
+			const result = buildExecutionOptions(context, 0, "executePrompt");
+
+			const server = result.mcpConfig?.inlineServers?.minimal as {
+				command: string;
+				args?: string[];
+				env?: Record<string, string>;
+			};
+			expect(server.command).toBe("my-server");
+			expect(server.args).toBeUndefined();
+			expect(server.env).toBeUndefined();
+		});
+
+		it("should omit optional HTTP headers when empty", () => {
+			const params = {
+				...defaultExecutePromptParams,
+				mcpServers: {
+					serversList: [
+						{
+							name: "minimal-http",
+							serverType: "http",
+							command: "",
+							args: "",
+							env: "",
+							url: "https://example.com/mcp",
+							headers: "",
+						},
+					],
+				},
+				mcpConfigFilePaths: "",
+				mcpStrictMode: false,
+			};
+			const context = createTestContext(params) as IExecuteFunctions;
+
+			const result = buildExecutionOptions(context, 0, "executePrompt");
+
+			const server = result.mcpConfig?.inlineServers?.["minimal-http"] as {
+				type: string;
+				url: string;
+				headers?: Record<string, string>;
+			};
+			expect(server.type).toBe("http");
+			expect(server.url).toBe("https://example.com/mcp");
+			expect(server.headers).toBeUndefined();
 		});
 	});
 });

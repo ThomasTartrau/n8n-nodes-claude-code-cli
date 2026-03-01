@@ -8,6 +8,8 @@ import type {
 	PermissionMode,
 	SessionConfig,
 	ContextFile,
+	McpConfig,
+	McpServerDefinition,
 } from "../interfaces/index.js";
 
 /**
@@ -174,6 +176,103 @@ export function buildExecutionOptions(
 		}
 	}
 
+	// Parse MCP servers
+	const mcpServersData = context.getNodeParameter("mcpServers", itemIndex, {
+		serversList: [],
+	}) as {
+		serversList: Array<{
+			name: string;
+			serverType: string;
+			command: string;
+			args: string;
+			env: string;
+			url: string;
+			headers: string;
+		}>;
+	};
+
+	const mcpConfigFilePathsRaw = context.getNodeParameter(
+		"mcpConfigFilePaths",
+		itemIndex,
+		"",
+	) as string;
+
+	const mcpStrictMode = context.getNodeParameter(
+		"mcpStrictMode",
+		itemIndex,
+		false,
+	) as boolean;
+
+	let mcpConfig: McpConfig | undefined;
+
+	const hasInlineServers =
+		mcpServersData.serversList && mcpServersData.serversList.length > 0;
+	const configFilePaths = mcpConfigFilePathsRaw
+		? mcpConfigFilePathsRaw
+				.split(",")
+				.map((p) => p.trim())
+				.filter(Boolean)
+		: [];
+	const hasConfigFiles = configFilePaths.length > 0;
+
+	if (hasInlineServers || hasConfigFiles || mcpStrictMode) {
+		mcpConfig = {};
+
+		if (hasInlineServers) {
+			mcpConfig.inlineServers = {};
+			for (const server of mcpServersData.serversList) {
+				let def: McpServerDefinition;
+
+				if (server.serverType === "http") {
+					def = {
+						type: "http" as const,
+						url: server.url,
+					};
+					if (server.headers) {
+						def.headers = JSON.parse(server.headers) as Record<string, string>;
+					}
+				} else {
+					// Split command on whitespace: first token is the executable,
+					// remaining tokens are prepended to the explicit args list.
+					// This lets users type "npx -y @org/server --key val" in
+					// the Command field and still produce valid MCP config
+					// where command="npx" and args=["-y","@org/server","--key","val"].
+					const commandParts = server.command.split(/\s+/).filter(Boolean);
+					const executable = commandParts[0];
+					const commandArgs = commandParts.slice(1);
+
+					const explicitArgs = server.args
+						? server.args
+								.split(",")
+								.map((a) => a.trim())
+								.filter(Boolean)
+						: [];
+					const allArgs = [...commandArgs, ...explicitArgs];
+
+					def = {
+						command: executable,
+					};
+					if (allArgs.length > 0) {
+						def.args = allArgs;
+					}
+					if (server.env) {
+						def.env = JSON.parse(server.env) as Record<string, string>;
+					}
+				}
+
+				mcpConfig.inlineServers[server.name] = def;
+			}
+		}
+
+		if (hasConfigFiles) {
+			mcpConfig.configFilePaths = configFilePaths;
+		}
+
+		if (mcpStrictMode) {
+			mcpConfig.strictMode = true;
+		}
+	}
+
 	return {
 		prompt,
 		workingDirectory: options.workingDirectory as string | undefined,
@@ -193,6 +292,7 @@ export function buildExecutionOptions(
 		jsonSchema: (options.jsonSchema as string) || undefined,
 		fallbackModel: (options.fallbackModel as string) || undefined,
 		agents,
+		mcpConfig,
 		extendedContext: options.extendedContext !== false,
 		worktree: options.worktreeEnabled
 			? (options.worktreeName as string) || ""

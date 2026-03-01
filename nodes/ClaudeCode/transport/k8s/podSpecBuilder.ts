@@ -318,6 +318,30 @@ export function buildClaudeArgs(options: ClaudeCodeExecutionOptions): string[] {
 		args.push("--agents", JSON.stringify(options.agents));
 	}
 
+	// MCP servers
+	if (options.mcpConfig) {
+		if (
+			options.mcpConfig.inlineServers &&
+			Object.keys(options.mcpConfig.inlineServers).length > 0
+		) {
+			args.push(
+				"--mcp-config",
+				JSON.stringify({ mcpServers: options.mcpConfig.inlineServers }),
+			);
+		}
+		if (
+			options.mcpConfig.configFilePaths &&
+			options.mcpConfig.configFilePaths.length > 0
+		) {
+			for (const filePath of options.mcpConfig.configFilePaths) {
+				args.push("--mcp-config", filePath);
+			}
+		}
+		if (options.mcpConfig.strictMode) {
+			args.push("--strict-mcp-config");
+		}
+	}
+
 	if (options.additionalArgs && options.additionalArgs.length > 0) {
 		args.push(...options.additionalArgs);
 	}

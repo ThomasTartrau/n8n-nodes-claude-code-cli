@@ -686,6 +686,170 @@ describe("commandBuilder", () => {
 			expect(result.args).not.toContain("--worktree");
 		});
 
+		it("should not include --mcp-config when mcpConfig is undefined", () => {
+			const options: ClaudeCodeExecutionOptions = {
+				prompt: "Test",
+				outputFormat: "json",
+			};
+
+			const result = buildCommand(options, defaultCredentials);
+
+			expect(result.args).not.toContain("--mcp-config");
+			expect(result.args).not.toContain("--strict-mcp-config");
+		});
+
+		it("should include --mcp-config with inline JSON for stdio servers", () => {
+			const options: ClaudeCodeExecutionOptions = {
+				prompt: "Test",
+				outputFormat: "json",
+				mcpConfig: {
+					inlineServers: {
+						slack: {
+							command: "npx -y @modelcontextprotocol/server-slack",
+							env: { SLACK_TOKEN: "xoxb-test" },
+						},
+					},
+				},
+			};
+
+			const result = buildCommand(options, defaultCredentials);
+
+			const mcpIdx = result.args.indexOf("--mcp-config");
+			expect(mcpIdx).toBeGreaterThan(-1);
+			const mcpJson = JSON.parse(result.args[mcpIdx + 1]);
+			expect(mcpJson.mcpServers.slack.command).toBe(
+				"npx -y @modelcontextprotocol/server-slack",
+			);
+			expect(mcpJson.mcpServers.slack.env.SLACK_TOKEN).toBe("xoxb-test");
+		});
+
+		it("should include --mcp-config with inline JSON for HTTP servers", () => {
+			const options: ClaudeCodeExecutionOptions = {
+				prompt: "Test",
+				outputFormat: "json",
+				mcpConfig: {
+					inlineServers: {
+						remote: {
+							type: "http" as const,
+							url: "https://mcp.example.com/sse",
+							headers: { Authorization: "Bearer tok" },
+						},
+					},
+				},
+			};
+
+			const result = buildCommand(options, defaultCredentials);
+
+			const mcpIdx = result.args.indexOf("--mcp-config");
+			const mcpJson = JSON.parse(result.args[mcpIdx + 1]);
+			expect(mcpJson.mcpServers.remote.type).toBe("http");
+			expect(mcpJson.mcpServers.remote.url).toBe("https://mcp.example.com/sse");
+			expect(mcpJson.mcpServers.remote.headers.Authorization).toBe(
+				"Bearer tok",
+			);
+		});
+
+		it("should include separate --mcp-config per file path", () => {
+			const options: ClaudeCodeExecutionOptions = {
+				prompt: "Test",
+				outputFormat: "json",
+				mcpConfig: {
+					configFilePaths: ["/path/to/a.json", "/path/to/b.json"],
+				},
+			};
+
+			const result = buildCommand(options, defaultCredentials);
+
+			const mcpIndices: number[] = [];
+			result.args.forEach((arg, i) => {
+				if (arg === "--mcp-config") {
+					mcpIndices.push(i);
+				}
+			});
+			expect(mcpIndices).toHaveLength(2);
+			expect(result.args[mcpIndices[0] + 1]).toBe("/path/to/a.json");
+			expect(result.args[mcpIndices[1] + 1]).toBe("/path/to/b.json");
+		});
+
+		it("should include --strict-mcp-config when strict mode enabled", () => {
+			const options: ClaudeCodeExecutionOptions = {
+				prompt: "Test",
+				outputFormat: "json",
+				mcpConfig: {
+					strictMode: true,
+				},
+			};
+
+			const result = buildCommand(options, defaultCredentials);
+
+			expect(result.args).toContain("--strict-mcp-config");
+		});
+
+		it("should combine inline servers and file paths", () => {
+			const options: ClaudeCodeExecutionOptions = {
+				prompt: "Test",
+				outputFormat: "json",
+				mcpConfig: {
+					inlineServers: {
+						slack: {
+							command: "npx server-slack",
+						},
+					},
+					configFilePaths: ["/path/to/extra.json"],
+					strictMode: true,
+				},
+			};
+
+			const result = buildCommand(options, defaultCredentials);
+
+			const mcpIndices: number[] = [];
+			result.args.forEach((arg, i) => {
+				if (arg === "--mcp-config") {
+					mcpIndices.push(i);
+				}
+			});
+			expect(mcpIndices).toHaveLength(2);
+			// First is inline JSON
+			const inlineJson = JSON.parse(result.args[mcpIndices[0] + 1]);
+			expect(inlineJson.mcpServers.slack).toBeDefined();
+			// Second is file path
+			expect(result.args[mcpIndices[1] + 1]).toBe("/path/to/extra.json");
+			expect(result.args).toContain("--strict-mcp-config");
+		});
+
+		it("should not include --mcp-config when inlineServers is empty", () => {
+			const options: ClaudeCodeExecutionOptions = {
+				prompt: "Test",
+				outputFormat: "json",
+				mcpConfig: {
+					inlineServers: {},
+				},
+			};
+
+			const result = buildCommand(options, defaultCredentials);
+
+			expect(result.args).not.toContain("--mcp-config");
+		});
+
+		it("should place --mcp-config before additional args", () => {
+			const options: ClaudeCodeExecutionOptions = {
+				prompt: "Test",
+				outputFormat: "json",
+				mcpConfig: {
+					inlineServers: {
+						slack: { command: "server-slack" },
+					},
+				},
+				additionalArgs: ["--custom-flag"],
+			};
+
+			const result = buildCommand(options, defaultCredentials);
+
+			const mcpIdx = result.args.indexOf("--mcp-config");
+			const customIdx = result.args.indexOf("--custom-flag");
+			expect(mcpIdx).toBeLessThan(customIdx);
+		});
+
 		it("should place --worktree before --add-dir", () => {
 			const options: ClaudeCodeExecutionOptions = {
 				prompt: "Test",

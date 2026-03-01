@@ -17,6 +17,7 @@ import {
 	toolPermissionsDescription,
 	modelDescription,
 	agentsDescription,
+	mcpServersDescription,
 	optionsDescription,
 } from "./descriptions/index.js";
 
@@ -121,6 +122,9 @@ export class ClaudeCode implements INodeType {
 
 			// Custom subagents
 			...agentsDescription,
+
+			// MCP servers
+			...mcpServersDescription,
 
 			// Additional options
 			...optionsDescription,

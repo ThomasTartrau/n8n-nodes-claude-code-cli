@@ -1,5 +1,9 @@
 export type {
 	AgentDefinition,
+	McpServerStdio,
+	McpServerHttp,
+	McpServerDefinition,
+	McpConfig,
 	ConnectionMode,
 	OutputFormat,
 	PermissionMode,
