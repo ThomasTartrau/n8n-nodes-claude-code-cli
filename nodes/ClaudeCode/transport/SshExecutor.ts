@@ -100,125 +100,139 @@ export class SshExecutor implements IClaudeCodeExecutor {
 			sshConfig = this.buildSshConfig();
 		} catch (err) {
 			const duration = Date.now() - startTime;
-			return Promise.resolve(createErrorResult((err as Error).message, 1, duration));
+			return Promise.resolve(
+				createErrorResult((err as Error).message, 1, duration),
+			);
 		}
 
-		return loadSsh2().then((ssh2) => {
-			return new Promise<ClaudeCodeResult>((resolve) => {
-				const timeoutMs = options.timeout ? options.timeout * 1000 : 300000;
+		return loadSsh2()
+			.then((ssh2) => {
+				return new Promise<ClaudeCodeResult>((resolve) => {
+					const timeoutMs = options.timeout ? options.timeout * 1000 : 300000;
 
-				let stdout = "";
-				let stderr = "";
-				let connectionClosed = false;
+					let stdout = "";
+					let stderr = "";
+					let connectionClosed = false;
 
-				const conn = new ssh2.Client();
+					const conn = new ssh2.Client();
 
-				// Set connection timeout
-				const connectionTimeout = setTimeout(() => {
-					if (!connectionClosed) {
-						connectionClosed = true;
-						conn.end();
-						const duration = Date.now() - startTime;
-						resolve(createErrorResult("SSH connection timeout", 1, duration));
-					}
-				}, timeoutMs);
-
-				conn.on("ready", () => {
-					// Explicitly disable PTY allocation for non-interactive execution
-					conn.exec(remoteCmd, { pty: false }, (err, stream) => {
-						if (err) {
-							clearTimeout(connectionTimeout);
+					// Set connection timeout
+					const connectionTimeout = setTimeout(() => {
+						if (!connectionClosed) {
 							connectionClosed = true;
 							conn.end();
 							const duration = Date.now() - startTime;
-							resolve(
-								createErrorResult(`SSH exec error: ${err.message}`, 1, duration),
-							);
-							return;
+							resolve(createErrorResult("SSH connection timeout", 1, duration));
 						}
+					}, timeoutMs);
 
-						let exitCode: number | null = null;
-						let streamClosed = false;
-
-						const handleCompletion = () => {
-							if (streamClosed && exitCode !== null && !connectionClosed) {
+					conn.on("ready", () => {
+						// Explicitly disable PTY allocation for non-interactive execution
+						conn.exec(remoteCmd, { pty: false }, (err, stream) => {
+							if (err) {
 								clearTimeout(connectionTimeout);
 								connectionClosed = true;
 								conn.end();
-
 								const duration = Date.now() - startTime;
-								const code = exitCode ?? 0;
-
-								if (options.outputFormat === "json") {
-									const parsed = parseJsonOutput(stdout);
-									resolve(normalizeOutput(parsed, code, duration, stderr));
-								} else if (options.outputFormat === "stream-json") {
-									const { events, result } = parseStreamJsonOutput(stdout);
-									resolve(
-										normalizeStreamOutput(events, result, code, duration, stderr),
-									);
-								} else {
-									resolve({
-										success: code === 0,
-										sessionId: "",
-										output: stdout,
-										exitCode: code,
+								resolve(
+									createErrorResult(
+										`SSH exec error: ${err.message}`,
+										1,
 										duration,
-										error: code !== 0 ? stderr : undefined,
-									});
+									),
+								);
+								return;
+							}
+
+							let exitCode: number | null = null;
+							let streamClosed = false;
+
+							const handleCompletion = () => {
+								if (streamClosed && exitCode !== null && !connectionClosed) {
+									clearTimeout(connectionTimeout);
+									connectionClosed = true;
+									conn.end();
+
+									const duration = Date.now() - startTime;
+									const code = exitCode ?? 0;
+
+									if (options.outputFormat === "json") {
+										const parsed = parseJsonOutput(stdout);
+										resolve(normalizeOutput(parsed, code, duration, stderr));
+									} else if (options.outputFormat === "stream-json") {
+										const { events, result } = parseStreamJsonOutput(stdout);
+										resolve(
+											normalizeStreamOutput(
+												events,
+												result,
+												code,
+												duration,
+												stderr,
+											),
+										);
+									} else {
+										resolve({
+											success: code === 0,
+											sessionId: "",
+											output: stdout,
+											exitCode: code,
+											duration,
+											error: code !== 0 ? stderr : undefined,
+										});
+									}
 								}
-							}
-						};
+							};
 
-						stream.on("exit", (code: number) => {
-							exitCode = code ?? 0;
-							handleCompletion();
+							stream.on("exit", (code: number) => {
+								exitCode = code ?? 0;
+								handleCompletion();
+							});
+
+							stream.on("close", () => {
+								streamClosed = true;
+								// If exit wasn't received, use 0 as default
+								if (exitCode === null) {
+									exitCode = 0;
+								}
+								handleCompletion();
+							});
+
+							stream.on("data", (data: Buffer) => {
+								stdout += data.toString();
+							});
+
+							stream.stderr.on("data", (data: Buffer) => {
+								stderr += data.toString();
+							});
+
+							// Close stdin immediately to signal no input will be sent
+							// This is critical for non-interactive commands like Claude Code with -p flag
+							stream.end();
 						});
-
-						stream.on("close", () => {
-							streamClosed = true;
-							// If exit wasn't received, use 0 as default
-							if (exitCode === null) {
-								exitCode = 0;
-							}
-							handleCompletion();
-						});
-
-						stream.on("data", (data: Buffer) => {
-							stdout += data.toString();
-						});
-
-						stream.stderr.on("data", (data: Buffer) => {
-							stderr += data.toString();
-						});
-
-						// Close stdin immediately to signal no input will be sent
-						// This is critical for non-interactive commands like Claude Code with -p flag
-						stream.end();
 					});
-				});
 
-				conn.on("error", (err: Error) => {
-					clearTimeout(connectionTimeout);
-					if (!connectionClosed) {
-						connectionClosed = true;
-						const duration = Date.now() - startTime;
-						resolve(
-							createErrorResult(
-								`SSH connection error: ${err.message}`,
-								1,
-								duration,
-							),
-						);
-					}
-				});
+					conn.on("error", (err: Error) => {
+						clearTimeout(connectionTimeout);
+						if (!connectionClosed) {
+							connectionClosed = true;
+							const duration = Date.now() - startTime;
+							resolve(
+								createErrorResult(
+									`SSH connection error: ${err.message}`,
+									1,
+									duration,
+								),
+							);
+						}
+					});
 
-				conn.connect(sshConfig);
+					conn.connect(sshConfig);
+				});
+			})
+			.catch((err) => {
+				const duration = Date.now() - startTime;
+				return createErrorResult((err as Error).message, 1, duration);
 			});
-		}).catch((err) => {
-			const duration = Date.now() - startTime;
-			return createErrorResult((err as Error).message, 1, duration);
-		});
 	}
 
 	/**
@@ -232,66 +246,72 @@ export class SshExecutor implements IClaudeCodeExecutor {
 			return Promise.resolve(false);
 		}
 
-		return loadSsh2().then((ssh2) => {
-			return new Promise<boolean>((resolve) => {
-				const conn = new ssh2.Client();
-				let resolved = false;
+		return loadSsh2()
+			.then((ssh2) => {
+				return new Promise<boolean>((resolve) => {
+					const conn = new ssh2.Client();
+					let resolved = false;
 
-				const timeout = setTimeout(() => {
-					if (!resolved) {
-						resolved = true;
-						conn.end();
-						resolve(false);
-					}
-				}, 10000);
-
-				conn.on("ready", () => {
-					const claudePath = this.credentials.claudePath || "claude";
-					// Explicitly disable PTY allocation
-					conn.exec(`${claudePath} --version`, { pty: false }, (err, stream) => {
-						if (err) {
-							clearTimeout(timeout);
-							if (!resolved) {
-								resolved = true;
-								conn.end();
-								resolve(false);
-							}
-							return;
+					const timeout = setTimeout(() => {
+						if (!resolved) {
+							resolved = true;
+							conn.end();
+							resolve(false);
 						}
+					}, 10000);
 
-						stream.on("exit", (code: number) => {
-							clearTimeout(timeout);
-							if (!resolved) {
-								resolved = true;
-								conn.end();
-								resolve(code === 0);
-							}
-						});
+					conn.on("ready", () => {
+						const claudePath = this.credentials.claudePath || "claude";
+						// Explicitly disable PTY allocation
+						conn.exec(
+							`${claudePath} --version`,
+							{ pty: false },
+							(err, stream) => {
+								if (err) {
+									clearTimeout(timeout);
+									if (!resolved) {
+										resolved = true;
+										conn.end();
+										resolve(false);
+									}
+									return;
+								}
 
-						stream.on("close", () => {
-							clearTimeout(timeout);
-							if (!resolved) {
-								resolved = true;
-								conn.end();
-								resolve(true); // Assume success if close without exit
-							}
-						});
+								stream.on("exit", (code: number) => {
+									clearTimeout(timeout);
+									if (!resolved) {
+										resolved = true;
+										conn.end();
+										resolve(code === 0);
+									}
+								});
 
-						// Close stdin immediately
-						stream.end();
+								stream.on("close", () => {
+									clearTimeout(timeout);
+									if (!resolved) {
+										resolved = true;
+										conn.end();
+										resolve(true); // Assume success if close without exit
+									}
+								});
+
+								// Close stdin immediately
+								stream.end();
+							},
+						);
 					});
-				});
 
-				conn.on("error", () => {
-					clearTimeout(timeout);
-					if (!resolved) {
-						resolved = true;
-						resolve(false);
-					}
-				});
+					conn.on("error", () => {
+						clearTimeout(timeout);
+						if (!resolved) {
+							resolved = true;
+							resolve(false);
+						}
+					});
 
-				conn.connect(sshConfig);
-			});
-		}).catch(() => false);
+					conn.connect(sshConfig);
+				});
+			})
+			.catch(() => false);
 	}
 }
