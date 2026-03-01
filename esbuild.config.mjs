@@ -23,7 +23,7 @@ esbuild
 		// Keep the directory structure relative to project root
 		outbase: ".",
 		// n8n-workflow is provided by n8n at runtime
-		// ssh2 has native bindings and cannot be bundled
+		// ssh2 has native bindings and cannot be bundled; loaded dynamically only when SSH mode is used
 		external: ["n8n-workflow", "ssh2"],
 		// Suppress warnings for dynamic requires in transitive deps
 		logLevel: "warning",

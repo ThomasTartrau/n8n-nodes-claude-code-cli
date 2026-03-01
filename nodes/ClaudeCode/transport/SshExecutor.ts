@@ -1,4 +1,4 @@
-import { Client, type ConnectConfig } from "ssh2";
+import type { ConnectConfig } from "ssh2";
 import { readFileSync } from "node:fs";
 import { homedir } from "node:os";
 import type {
@@ -18,6 +18,14 @@ import {
 	parseStreamJsonOutput,
 	normalizeStreamOutput,
 } from "../utils/index.js";
+
+function loadSsh2(): Promise<typeof import("ssh2")> {
+	return import("ssh2").catch(() => {
+		throw new Error(
+			'SSH transport requires the "ssh2" package. Install it with: npm install ssh2',
+		);
+	});
+}
 
 /**
  * Executor for remote Claude Code CLI execution via SSH
@@ -84,201 +92,226 @@ export class SshExecutor implements IClaudeCodeExecutor {
 	 * Execute a Claude Code command via SSH
 	 */
 	execute(options: ClaudeCodeExecutionOptions): Promise<ClaudeCodeResult> {
-		return new Promise((resolve) => {
-			const startTime = Date.now();
-			const remoteCmd = this.buildRemoteCommand(options);
+		const startTime = Date.now();
+		const remoteCmd = this.buildRemoteCommand(options);
 
-			let sshConfig: ConnectConfig;
-			try {
-				sshConfig = this.buildSshConfig();
-			} catch (err) {
-				const duration = Date.now() - startTime;
-				resolve(createErrorResult((err as Error).message, 1, duration));
-				return;
-			}
+		let sshConfig: ConnectConfig;
+		try {
+			sshConfig = this.buildSshConfig();
+		} catch (err) {
+			const duration = Date.now() - startTime;
+			return Promise.resolve(
+				createErrorResult((err as Error).message, 1, duration),
+			);
+		}
 
-			const timeoutMs = options.timeout ? options.timeout * 1000 : 300000;
+		return loadSsh2()
+			.then((ssh2) => {
+				return new Promise<ClaudeCodeResult>((resolve) => {
+					const timeoutMs = options.timeout ? options.timeout * 1000 : 300000;
 
-			let stdout = "";
-			let stderr = "";
-			let connectionClosed = false;
+					let stdout = "";
+					let stderr = "";
+					let connectionClosed = false;
 
-			const conn = new Client();
+					const conn = new ssh2.Client();
 
-			// Set connection timeout
-			const connectionTimeout = setTimeout(() => {
-				if (!connectionClosed) {
-					connectionClosed = true;
-					conn.end();
-					const duration = Date.now() - startTime;
-					resolve(createErrorResult("SSH connection timeout", 1, duration));
-				}
-			}, timeoutMs);
-
-			conn.on("ready", () => {
-				// Explicitly disable PTY allocation for non-interactive execution
-				conn.exec(remoteCmd, { pty: false }, (err, stream) => {
-					if (err) {
-						clearTimeout(connectionTimeout);
-						connectionClosed = true;
-						conn.end();
-						const duration = Date.now() - startTime;
-						resolve(
-							createErrorResult(`SSH exec error: ${err.message}`, 1, duration),
-						);
-						return;
-					}
-
-					let exitCode: number | null = null;
-					let streamClosed = false;
-
-					const handleCompletion = () => {
-						if (streamClosed && exitCode !== null && !connectionClosed) {
-							clearTimeout(connectionTimeout);
+					// Set connection timeout
+					const connectionTimeout = setTimeout(() => {
+						if (!connectionClosed) {
 							connectionClosed = true;
 							conn.end();
-
 							const duration = Date.now() - startTime;
-							const code = exitCode ?? 0;
+							resolve(createErrorResult("SSH connection timeout", 1, duration));
+						}
+					}, timeoutMs);
 
-							if (options.outputFormat === "json") {
-								const parsed = parseJsonOutput(stdout);
-								resolve(normalizeOutput(parsed, code, duration, stderr));
-							} else if (options.outputFormat === "stream-json") {
-								const { events, result } = parseStreamJsonOutput(stdout);
+					conn.on("ready", () => {
+						// Explicitly disable PTY allocation for non-interactive execution
+						conn.exec(remoteCmd, { pty: false }, (err, stream) => {
+							if (err) {
+								clearTimeout(connectionTimeout);
+								connectionClosed = true;
+								conn.end();
+								const duration = Date.now() - startTime;
 								resolve(
-									normalizeStreamOutput(events, result, code, duration, stderr),
+									createErrorResult(
+										`SSH exec error: ${err.message}`,
+										1,
+										duration,
+									),
 								);
-							} else {
-								resolve({
-									success: code === 0,
-									sessionId: "",
-									output: stdout,
-									exitCode: code,
-									duration,
-									error: code !== 0 ? stderr : undefined,
-								});
+								return;
 							}
+
+							let exitCode: number | null = null;
+							let streamClosed = false;
+
+							const handleCompletion = () => {
+								if (streamClosed && exitCode !== null && !connectionClosed) {
+									clearTimeout(connectionTimeout);
+									connectionClosed = true;
+									conn.end();
+
+									const duration = Date.now() - startTime;
+									const code = exitCode ?? 0;
+
+									if (options.outputFormat === "json") {
+										const parsed = parseJsonOutput(stdout);
+										resolve(normalizeOutput(parsed, code, duration, stderr));
+									} else if (options.outputFormat === "stream-json") {
+										const { events, result } = parseStreamJsonOutput(stdout);
+										resolve(
+											normalizeStreamOutput(
+												events,
+												result,
+												code,
+												duration,
+												stderr,
+											),
+										);
+									} else {
+										resolve({
+											success: code === 0,
+											sessionId: "",
+											output: stdout,
+											exitCode: code,
+											duration,
+											error: code !== 0 ? stderr : undefined,
+										});
+									}
+								}
+							};
+
+							stream.on("exit", (code: number) => {
+								exitCode = code ?? 0;
+								handleCompletion();
+							});
+
+							stream.on("close", () => {
+								streamClosed = true;
+								// If exit wasn't received, use 0 as default
+								if (exitCode === null) {
+									exitCode = 0;
+								}
+								handleCompletion();
+							});
+
+							stream.on("data", (data: Buffer) => {
+								stdout += data.toString();
+							});
+
+							stream.stderr.on("data", (data: Buffer) => {
+								stderr += data.toString();
+							});
+
+							// Close stdin immediately to signal no input will be sent
+							// This is critical for non-interactive commands like Claude Code with -p flag
+							stream.end();
+						});
+					});
+
+					conn.on("error", (err: Error) => {
+						clearTimeout(connectionTimeout);
+						if (!connectionClosed) {
+							connectionClosed = true;
+							const duration = Date.now() - startTime;
+							resolve(
+								createErrorResult(
+									`SSH connection error: ${err.message}`,
+									1,
+									duration,
+								),
+							);
 						}
-					};
-
-					stream.on("exit", (code: number) => {
-						exitCode = code ?? 0;
-						handleCompletion();
 					});
 
-					stream.on("close", () => {
-						streamClosed = true;
-						// If exit wasn't received, use 0 as default
-						if (exitCode === null) {
-							exitCode = 0;
-						}
-						handleCompletion();
-					});
-
-					stream.on("data", (data: Buffer) => {
-						stdout += data.toString();
-					});
-
-					stream.stderr.on("data", (data: Buffer) => {
-						stderr += data.toString();
-					});
-
-					// Close stdin immediately to signal no input will be sent
-					// This is critical for non-interactive commands like Claude Code with -p flag
-					stream.end();
+					conn.connect(sshConfig);
 				});
+			})
+			.catch((err) => {
+				const duration = Date.now() - startTime;
+				return createErrorResult((err as Error).message, 1, duration);
 			});
-
-			conn.on("error", (err: Error) => {
-				clearTimeout(connectionTimeout);
-				if (!connectionClosed) {
-					connectionClosed = true;
-					const duration = Date.now() - startTime;
-					resolve(
-						createErrorResult(
-							`SSH connection error: ${err.message}`,
-							1,
-							duration,
-						),
-					);
-				}
-			});
-
-			conn.connect(sshConfig);
-		});
 	}
 
 	/**
 	 * Test SSH connection and Claude Code availability
 	 */
 	testConnection(): Promise<boolean> {
-		return new Promise((resolve) => {
-			let sshConfig: ConnectConfig;
-			try {
-				sshConfig = this.buildSshConfig();
-			} catch {
-				resolve(false);
-				return;
-			}
+		let sshConfig: ConnectConfig;
+		try {
+			sshConfig = this.buildSshConfig();
+		} catch {
+			return Promise.resolve(false);
+		}
 
-			const conn = new Client();
-			let resolved = false;
+		return loadSsh2()
+			.then((ssh2) => {
+				return new Promise<boolean>((resolve) => {
+					const conn = new ssh2.Client();
+					let resolved = false;
 
-			const timeout = setTimeout(() => {
-				if (!resolved) {
-					resolved = true;
-					conn.end();
-					resolve(false);
-				}
-			}, 10000);
-
-			conn.on("ready", () => {
-				const claudePath = this.credentials.claudePath || "claude";
-				// Explicitly disable PTY allocation
-				conn.exec(`${claudePath} --version`, { pty: false }, (err, stream) => {
-					if (err) {
-						clearTimeout(timeout);
+					const timeout = setTimeout(() => {
 						if (!resolved) {
 							resolved = true;
 							conn.end();
 							resolve(false);
 						}
-						return;
-					}
+					}, 10000);
 
-					stream.on("exit", (code: number) => {
+					conn.on("ready", () => {
+						const claudePath = this.credentials.claudePath || "claude";
+						// Explicitly disable PTY allocation
+						conn.exec(
+							`${claudePath} --version`,
+							{ pty: false },
+							(err, stream) => {
+								if (err) {
+									clearTimeout(timeout);
+									if (!resolved) {
+										resolved = true;
+										conn.end();
+										resolve(false);
+									}
+									return;
+								}
+
+								stream.on("exit", (code: number) => {
+									clearTimeout(timeout);
+									if (!resolved) {
+										resolved = true;
+										conn.end();
+										resolve(code === 0);
+									}
+								});
+
+								stream.on("close", () => {
+									clearTimeout(timeout);
+									if (!resolved) {
+										resolved = true;
+										conn.end();
+										resolve(true); // Assume success if close without exit
+									}
+								});
+
+								// Close stdin immediately
+								stream.end();
+							},
+						);
+					});
+
+					conn.on("error", () => {
 						clearTimeout(timeout);
 						if (!resolved) {
 							resolved = true;
-							conn.end();
-							resolve(code === 0);
+							resolve(false);
 						}
 					});
 
-					stream.on("close", () => {
-						clearTimeout(timeout);
-						if (!resolved) {
-							resolved = true;
-							conn.end();
-							resolve(true); // Assume success if close without exit
-						}
-					});
-
-					// Close stdin immediately
-					stream.end();
+					conn.connect(sshConfig);
 				});
-			});
-
-			conn.on("error", () => {
-				clearTimeout(timeout);
-				if (!resolved) {
-					resolved = true;
-					resolve(false);
-				}
-			});
-
-			conn.connect(sshConfig);
-		});
+			})
+			.catch(() => false);
 	}
 }
