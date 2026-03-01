@@ -1,3 +1,10 @@
+# [1.7.0](https://github.com/ThomasTartrau/n8n-nodes-claude-code-cli/compare/v1.6.0...v1.7.0) (2026-03-01)
+
+
+### Features
+
+* add MCP servers passthrough support ([d0b89b6](https://github.com/ThomasTartrau/n8n-nodes-claude-code-cli/commit/d0b89b6525df68b7d64f26589154cc72ac6ef21a))
+
 # [1.6.0](https://github.com/ThomasTartrau/n8n-nodes-claude-code-cli/compare/v1.5.0...v1.6.0) (2026-02-28)
 
 
