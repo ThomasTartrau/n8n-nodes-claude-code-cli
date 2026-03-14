@@ -1,3 +1,10 @@
+# [1.8.0](https://github.com/ThomasTartrau/n8n-nodes-claude-code-cli/compare/v1.7.0...v1.8.0) (2026-03-14)
+
+
+### Features
+
+* add --effort, system prompt replace mode, and max output tokens ([9909255](https://github.com/ThomasTartrau/n8n-nodes-claude-code-cli/commit/99092553a72b7b0701cdae8a45a6e80c7ebfa60c))
+
 # [1.7.0](https://github.com/ThomasTartrau/n8n-nodes-claude-code-cli/compare/v1.6.0...v1.7.0) (2026-03-01)
 
 
