@@ -6,6 +6,8 @@ import type {
 	ToolPermissions,
 	OutputFormat,
 	PermissionMode,
+	ReasoningEffort,
+	SystemPromptMode,
 	SessionConfig,
 	ContextFile,
 	McpConfig,
@@ -287,6 +289,8 @@ export function buildExecutionOptions(
 		timeout: (options.timeout as number) || 300,
 		systemPrompt: (options.systemPrompt as string) || undefined,
 		systemPromptFile: (options.systemPromptFile as string) || undefined,
+		systemPromptMode:
+			(options.systemPromptMode as SystemPromptMode) || undefined,
 		verbose: (options.verbose as boolean) || undefined,
 		maxBudgetUsd: (options.maxBudgetUsd as number) || undefined,
 		jsonSchema: (options.jsonSchema as string) || undefined,
@@ -297,5 +301,11 @@ export function buildExecutionOptions(
 		worktree: options.worktreeEnabled
 			? (options.worktreeName as string) || ""
 			: undefined,
+		effort:
+			(options.effort as ReasoningEffort) &&
+			(options.effort as string) !== "high"
+				? (options.effort as ReasoningEffort)
+				: undefined,
+		maxOutputTokens: (options.maxOutputTokens as number) || undefined,
 	};
 }

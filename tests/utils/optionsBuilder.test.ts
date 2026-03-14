@@ -26,6 +26,12 @@ import {
 	emptyMcpServersParams,
 	fullMcpConfigParams,
 	mcpCommandWithInlineArgsParams,
+	effortLowParams,
+	effortMediumParams,
+	effortHighParams,
+	systemPromptReplaceParams,
+	systemPromptAppendParams,
+	maxOutputTokensParams,
 } from "../fixtures/executeFunctionsHelper.js";
 
 describe("optionsBuilder", () => {
@@ -735,6 +741,95 @@ describe("optionsBuilder", () => {
 			expect(server.type).toBe("http");
 			expect(server.url).toBe("https://example.com/mcp");
 			expect(server.headers).toBeUndefined();
+		});
+
+		it("should parse effort low from options", () => {
+			const context = createTestContext(effortLowParams) as IExecuteFunctions;
+
+			const result = buildExecutionOptions(context, 0, "executePrompt");
+
+			expect(result.effort).toBe("low");
+		});
+
+		it("should parse effort medium from options", () => {
+			const context = createTestContext(
+				effortMediumParams,
+			) as IExecuteFunctions;
+
+			const result = buildExecutionOptions(context, 0, "executePrompt");
+
+			expect(result.effort).toBe("medium");
+		});
+
+		it("should leave effort undefined when high (default)", () => {
+			const context = createTestContext(effortHighParams) as IExecuteFunctions;
+
+			const result = buildExecutionOptions(context, 0, "executePrompt");
+
+			expect(result.effort).toBeUndefined();
+		});
+
+		it("should leave effort undefined when not set", () => {
+			const context = createTestContext(
+				defaultExecutePromptParams,
+			) as IExecuteFunctions;
+
+			const result = buildExecutionOptions(context, 0, "executePrompt");
+
+			expect(result.effort).toBeUndefined();
+		});
+
+		it("should parse systemPromptMode replace from options", () => {
+			const context = createTestContext(
+				systemPromptReplaceParams,
+			) as IExecuteFunctions;
+
+			const result = buildExecutionOptions(context, 0, "executePrompt");
+
+			expect(result.systemPromptMode).toBe("replace");
+			expect(result.systemPrompt).toBe("You are a custom assistant");
+			expect(result.systemPromptFile).toBe("/path/to/custom-prompt.txt");
+		});
+
+		it("should parse systemPromptMode append from options", () => {
+			const context = createTestContext(
+				systemPromptAppendParams,
+			) as IExecuteFunctions;
+
+			const result = buildExecutionOptions(context, 0, "executePrompt");
+
+			expect(result.systemPromptMode).toBe("append");
+			expect(result.systemPrompt).toBe("Be concise");
+		});
+
+		it("should leave systemPromptMode undefined when not set", () => {
+			const context = createTestContext(
+				defaultExecutePromptParams,
+			) as IExecuteFunctions;
+
+			const result = buildExecutionOptions(context, 0, "executePrompt");
+
+			expect(result.systemPromptMode).toBeUndefined();
+		});
+
+		it("should parse maxOutputTokens from options", () => {
+			const context = createTestContext(
+				maxOutputTokensParams,
+			) as IExecuteFunctions;
+
+			const result = buildExecutionOptions(context, 0, "executePrompt");
+
+			expect(result.maxOutputTokens).toBe(4096);
+		});
+
+		it("should leave maxOutputTokens undefined when not set", () => {
+			const context = createTestContext(
+				defaultExecutePromptParams,
+			) as IExecuteFunctions;
+
+			const result = buildExecutionOptions(context, 0, "executePrompt");
+
+			expect(result.maxOutputTokens).toBeUndefined();
 		});
 	});
 });

@@ -104,6 +104,16 @@ export interface McpConfig {
 }
 
 /**
+ * Reasoning effort level for Claude Code CLI
+ */
+export type ReasoningEffort = "low" | "medium" | "high";
+
+/**
+ * System prompt mode: append to or replace the default system prompt
+ */
+export type SystemPromptMode = "append" | "replace";
+
+/**
  * Claude Code execution options
  */
 export interface ClaudeCodeExecutionOptions {
@@ -120,6 +130,7 @@ export interface ClaudeCodeExecutionOptions {
 	timeout?: number;
 	systemPrompt?: string;
 	systemPromptFile?: string;
+	systemPromptMode?: SystemPromptMode;
 	verbose?: boolean;
 	maxBudgetUsd?: number;
 	jsonSchema?: string;
@@ -128,6 +139,8 @@ export interface ClaudeCodeExecutionOptions {
 	mcpConfig?: McpConfig;
 	extendedContext?: boolean;
 	worktree?: string;
+	effort?: ReasoningEffort;
+	maxOutputTokens?: number;
 }
 
 /**

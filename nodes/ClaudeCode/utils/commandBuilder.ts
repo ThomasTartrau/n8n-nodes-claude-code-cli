@@ -70,19 +70,32 @@ export function buildCommand(
 		);
 	}
 
-	// System prompt append (inline text)
+	// System prompt (inline text)
 	if (options.systemPrompt) {
-		args.push("--append-system-prompt", options.systemPrompt);
+		if (options.systemPromptMode === "replace") {
+			args.push("--system-prompt", options.systemPrompt);
+		} else {
+			args.push("--append-system-prompt", options.systemPrompt);
+		}
 	}
 
-	// System prompt append (from file)
+	// System prompt (from file)
 	if (options.systemPromptFile) {
-		args.push("--append-system-prompt-file", options.systemPromptFile);
+		if (options.systemPromptMode === "replace") {
+			args.push("--system-prompt-file", options.systemPromptFile);
+		} else {
+			args.push("--append-system-prompt-file", options.systemPromptFile);
+		}
 	}
 
 	// Verbose mode (explicit user toggle, independent of stream-json auto-verbose)
 	if (options.verbose && options.outputFormat !== "stream-json") {
 		args.push("--verbose");
+	}
+
+	// Reasoning effort
+	if (options.effort && options.effort !== "high") {
+		args.push("--effort", options.effort);
 	}
 
 	// Max budget (cost control)
@@ -160,6 +173,11 @@ export function buildCommand(
 	// Extended context (1M tokens)
 	if (options.extendedContext === false) {
 		env.CLAUDE_CODE_DISABLE_1M_CONTEXT = "1";
+	}
+
+	// Max output tokens
+	if (options.maxOutputTokens && options.maxOutputTokens > 0) {
+		env.CLAUDE_CODE_MAX_OUTPUT_TOKENS = String(options.maxOutputTokens);
 	}
 
 	// Parse env vars from local credentials
