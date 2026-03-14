@@ -217,6 +217,82 @@ export const newFlagsParams: Record<string, unknown> = {
 };
 
 /**
+ * Parameters with effort set to low
+ */
+export const effortLowParams: Record<string, unknown> = {
+	prompt: "Test with low effort",
+	model: "",
+	toolPermissions: {},
+	options: {
+		effort: "low",
+	},
+};
+
+/**
+ * Parameters with effort set to medium
+ */
+export const effortMediumParams: Record<string, unknown> = {
+	prompt: "Test with medium effort",
+	model: "",
+	toolPermissions: {},
+	options: {
+		effort: "medium",
+	},
+};
+
+/**
+ * Parameters with effort set to high (default, should be omitted)
+ */
+export const effortHighParams: Record<string, unknown> = {
+	prompt: "Test with high effort",
+	model: "",
+	toolPermissions: {},
+	options: {
+		effort: "high",
+	},
+};
+
+/**
+ * Parameters with system prompt in replace mode
+ */
+export const systemPromptReplaceParams: Record<string, unknown> = {
+	prompt: "Test with replace system prompt",
+	model: "",
+	toolPermissions: {},
+	options: {
+		systemPromptMode: "replace",
+		systemPrompt: "You are a custom assistant",
+		systemPromptFile: "/path/to/custom-prompt.txt",
+	},
+};
+
+/**
+ * Parameters with system prompt in append mode (explicit)
+ */
+export const systemPromptAppendParams: Record<string, unknown> = {
+	prompt: "Test with append system prompt",
+	model: "",
+	toolPermissions: {},
+	options: {
+		systemPromptMode: "append",
+		systemPrompt: "Be concise",
+		systemPromptFile: "/path/to/extra-rules.txt",
+	},
+};
+
+/**
+ * Parameters with max output tokens
+ */
+export const maxOutputTokensParams: Record<string, unknown> = {
+	prompt: "Test with max output tokens",
+	model: "",
+	toolPermissions: {},
+	options: {
+		maxOutputTokens: 4096,
+	},
+};
+
+/**
  * Parameters with partial new CLI flags
  */
 export const partialNewFlagsParams: Record<string, unknown> = {

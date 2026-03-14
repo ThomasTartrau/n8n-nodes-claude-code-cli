@@ -7,6 +7,8 @@ export type {
 	ConnectionMode,
 	OutputFormat,
 	PermissionMode,
+	ReasoningEffort,
+	SystemPromptMode,
 	ClaudeCodeOperation,
 	ToolPermissions,
 	SessionConfig,

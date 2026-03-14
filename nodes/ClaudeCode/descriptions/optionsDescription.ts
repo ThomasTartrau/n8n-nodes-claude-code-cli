@@ -31,6 +31,19 @@ export const optionsDescription: INodeProperties[] = [
 					"Output format for Claude Code response. Stream JSON captures all tool interactions as streaming events.",
 			},
 			{
+				displayName: "Reasoning Effort",
+				name: "effort",
+				type: "options",
+				options: [
+					{ name: "Low", value: "low" },
+					{ name: "Medium", value: "medium" },
+					{ name: "High", value: "high" },
+				],
+				default: "high",
+				description:
+					"Controls the reasoning effort level. Low = fast and cheap, High = deep thinking. Useful for workflows where some tasks are simple (summary, extraction) vs complex (refactoring).",
+			},
+			{
 				displayName: "Max Turns",
 				name: "maxTurns",
 				type: "number",
@@ -46,6 +59,28 @@ export const optionsDescription: INodeProperties[] = [
 				description: "Execution timeout in seconds. Maximum: 3600 (1 hour).",
 			},
 			{
+				displayName: "System Prompt Mode",
+				name: "systemPromptMode",
+				type: "options",
+				options: [
+					{
+						name: "Append",
+						value: "append",
+						description:
+							"Append to Claude Code default system prompt",
+					},
+					{
+						name: "Replace",
+						value: "replace",
+						description:
+							"Replace the entire Claude Code default system prompt",
+					},
+				],
+				default: "append",
+				description:
+					"Whether to append to or replace the default Claude Code system prompt. Replace gives full control over system instructions.",
+			},
+			{
 				displayName: "System Prompt",
 				name: "systemPrompt",
 				type: "string",
@@ -55,7 +90,7 @@ export const optionsDescription: INodeProperties[] = [
 				default: "",
 				placeholder: "You are a helpful code reviewer...",
 				description:
-					"Additional system prompt to append to Claude Code default system prompt",
+					"System prompt text. Behavior depends on System Prompt Mode: Append adds to the default prompt, Replace overrides it entirely.",
 			},
 			{
 				displayName: "System Prompt File",
@@ -64,7 +99,7 @@ export const optionsDescription: INodeProperties[] = [
 				default: "",
 				placeholder: "/path/to/system-prompt.txt",
 				description:
-					"Path to a file containing additional system prompt text to append to Claude Code default system prompt. Use this instead of inline System Prompt for long or reusable prompts.",
+					"Path to a file containing system prompt text. Behavior depends on System Prompt Mode: Append adds to the default prompt, Replace overrides it entirely.",
 			},
 			{
 				displayName: "Verbose",
@@ -81,6 +116,14 @@ export const optionsDescription: INodeProperties[] = [
 				default: 0,
 				description:
 					"Maximum dollar amount to spend before stopping execution. 0 means unlimited. Critical for controlling costs in automated workflows.",
+			},
+			{
+				displayName: "Max Output Tokens",
+				name: "maxOutputTokens",
+				type: "number",
+				default: 0,
+				description:
+					"Maximum number of tokens in the output. 0 means unlimited. Useful for controlling costs and avoiding overly long responses in automated workflows. Sets CLAUDE_CODE_MAX_OUTPUT_TOKENS environment variable.",
 			},
 			{
 				displayName: "JSON Schema",

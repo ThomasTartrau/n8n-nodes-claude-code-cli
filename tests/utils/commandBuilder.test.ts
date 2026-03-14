@@ -864,6 +864,183 @@ describe("commandBuilder", () => {
 			const addDirIdx = result.args.indexOf("--add-dir");
 			expect(worktreeIdx).toBeLessThan(addDirIdx);
 		});
+
+		it("should include --effort low when effort is low", () => {
+			const options: ClaudeCodeExecutionOptions = {
+				prompt: "Test",
+				outputFormat: "json",
+				effort: "low",
+			};
+
+			const result = buildCommand(options, defaultCredentials);
+
+			expect(result.args).toContain("--effort");
+			expect(result.args).toContain("low");
+		});
+
+		it("should include --effort medium when effort is medium", () => {
+			const options: ClaudeCodeExecutionOptions = {
+				prompt: "Test",
+				outputFormat: "json",
+				effort: "medium",
+			};
+
+			const result = buildCommand(options, defaultCredentials);
+
+			expect(result.args).toContain("--effort");
+			expect(result.args).toContain("medium");
+		});
+
+		it("should not include --effort when effort is high (default)", () => {
+			const options: ClaudeCodeExecutionOptions = {
+				prompt: "Test",
+				outputFormat: "json",
+				effort: "high",
+			};
+
+			const result = buildCommand(options, defaultCredentials);
+
+			expect(result.args).not.toContain("--effort");
+		});
+
+		it("should not include --effort when not set", () => {
+			const options: ClaudeCodeExecutionOptions = {
+				prompt: "Test",
+				outputFormat: "json",
+			};
+
+			const result = buildCommand(options, defaultCredentials);
+
+			expect(result.args).not.toContain("--effort");
+		});
+
+		it("should use --system-prompt in replace mode", () => {
+			const options: ClaudeCodeExecutionOptions = {
+				prompt: "Test",
+				outputFormat: "json",
+				systemPrompt: "Custom system prompt",
+				systemPromptMode: "replace",
+			};
+
+			const result = buildCommand(options, defaultCredentials);
+
+			expect(result.args).toContain("--system-prompt");
+			expect(result.args).toContain("Custom system prompt");
+			expect(result.args).not.toContain("--append-system-prompt");
+		});
+
+		it("should use --system-prompt-file in replace mode", () => {
+			const options: ClaudeCodeExecutionOptions = {
+				prompt: "Test",
+				outputFormat: "json",
+				systemPromptFile: "/path/to/prompt.txt",
+				systemPromptMode: "replace",
+			};
+
+			const result = buildCommand(options, defaultCredentials);
+
+			expect(result.args).toContain("--system-prompt-file");
+			expect(result.args).toContain("/path/to/prompt.txt");
+			expect(result.args).not.toContain("--append-system-prompt-file");
+		});
+
+		it("should use --append-system-prompt in append mode", () => {
+			const options: ClaudeCodeExecutionOptions = {
+				prompt: "Test",
+				outputFormat: "json",
+				systemPrompt: "Extra instructions",
+				systemPromptMode: "append",
+			};
+
+			const result = buildCommand(options, defaultCredentials);
+
+			expect(result.args).toContain("--append-system-prompt");
+			expect(result.args).toContain("Extra instructions");
+			expect(result.args).not.toContain("--system-prompt");
+		});
+
+		it("should use --append-system-prompt when systemPromptMode is not set", () => {
+			const options: ClaudeCodeExecutionOptions = {
+				prompt: "Test",
+				outputFormat: "json",
+				systemPrompt: "Extra instructions",
+			};
+
+			const result = buildCommand(options, defaultCredentials);
+
+			expect(result.args).toContain("--append-system-prompt");
+			expect(result.args).toContain("Extra instructions");
+		});
+
+		it("should use both --system-prompt and --system-prompt-file in replace mode", () => {
+			const options: ClaudeCodeExecutionOptions = {
+				prompt: "Test",
+				outputFormat: "json",
+				systemPrompt: "Custom prompt",
+				systemPromptFile: "/path/to/prompt.txt",
+				systemPromptMode: "replace",
+			};
+
+			const result = buildCommand(options, defaultCredentials);
+
+			expect(result.args).toContain("--system-prompt");
+			expect(result.args).toContain("Custom prompt");
+			expect(result.args).toContain("--system-prompt-file");
+			expect(result.args).toContain("/path/to/prompt.txt");
+			expect(result.args).not.toContain("--append-system-prompt");
+			expect(result.args).not.toContain("--append-system-prompt-file");
+		});
+
+		it("should set CLAUDE_CODE_MAX_OUTPUT_TOKENS env var when maxOutputTokens is set", () => {
+			const options: ClaudeCodeExecutionOptions = {
+				prompt: "Test",
+				outputFormat: "json",
+				maxOutputTokens: 4096,
+			};
+
+			const result = buildCommand(options, defaultCredentials);
+
+			expect(result.env).toBeDefined();
+			expect(result.env?.CLAUDE_CODE_MAX_OUTPUT_TOKENS).toBe("4096");
+		});
+
+		it("should not set CLAUDE_CODE_MAX_OUTPUT_TOKENS when zero", () => {
+			const options: ClaudeCodeExecutionOptions = {
+				prompt: "Test",
+				outputFormat: "json",
+				maxOutputTokens: 0,
+			};
+
+			const result = buildCommand(options, defaultCredentials);
+
+			expect(result.env).toBeUndefined();
+		});
+
+		it("should not set CLAUDE_CODE_MAX_OUTPUT_TOKENS when not set", () => {
+			const options: ClaudeCodeExecutionOptions = {
+				prompt: "Test",
+				outputFormat: "json",
+			};
+
+			const result = buildCommand(options, defaultCredentials);
+
+			expect(result.env).toBeUndefined();
+		});
+
+		it("should combine CLAUDE_CODE_MAX_OUTPUT_TOKENS with other env vars", () => {
+			const credentials: LocalCredentials = sampleCredentials.local;
+			const options: ClaudeCodeExecutionOptions = {
+				prompt: "Test",
+				outputFormat: "json",
+				maxOutputTokens: 2048,
+			};
+
+			const result = buildCommand(options, credentials);
+
+			expect(result.env).toBeDefined();
+			expect(result.env?.CLAUDE_CODE_MAX_OUTPUT_TOKENS).toBe("2048");
+			expect(result.env?.ANTHROPIC_API_KEY).toBe("sk-test-123");
+		});
 	});
 
 	describe("buildShellCommand", () => {
