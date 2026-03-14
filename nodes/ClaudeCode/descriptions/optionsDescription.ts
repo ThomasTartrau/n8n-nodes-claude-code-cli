@@ -66,14 +66,12 @@ export const optionsDescription: INodeProperties[] = [
 					{
 						name: "Append",
 						value: "append",
-						description:
-							"Append to Claude Code default system prompt",
+						description: "Append to Claude Code default system prompt",
 					},
 					{
 						name: "Replace",
 						value: "replace",
-						description:
-							"Replace the entire Claude Code default system prompt",
+						description: "Replace the entire Claude Code default system prompt",
 					},
 				],
 				default: "append",
