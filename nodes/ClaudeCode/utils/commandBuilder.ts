@@ -114,7 +114,8 @@ export function buildCommand(
 	}
 
 	// Worktree isolation
-	if (options.worktree !== undefined) {
+	// Worktree isolation — "" means bare --worktree (auto-name), set by optionsBuilder
+	if (options.worktree !== undefined && options.worktree !== null) {
 		if (options.worktree) {
 			args.push("--worktree", options.worktree);
 		} else {
@@ -189,6 +190,11 @@ export function buildCommand(
 		}
 	}
 
+	// Per-execution env vars (override credential-level)
+	if (options.envVars) {
+		Object.assign(env, options.envVars);
+	}
+
 	const claudePath = credentials.claudePath || "claude";
 	const cwd =
 		options.workingDirectory || credentials.defaultWorkingDir || undefined;
@@ -202,11 +208,18 @@ export function buildCommand(
 }
 
 /**
+ * Escapes single quotes in a string for safe use inside single-quoted shell contexts.
+ * Returns the escaped value WITHOUT surrounding quotes.
+ */
+export function escapeShellValue(value: string): string {
+	return value.replace(/'/g, "'\\''");
+}
+
+/**
  * Escapes a shell argument for safe use in SSH/Docker exec commands
  */
 export function escapeShellArg(arg: string): string {
-	// Single-quote the argument and escape any existing single quotes
-	return `'${arg.replace(/'/g, "'\\''")}'`;
+	return `'${escapeShellValue(arg)}'`;
 }
 
 /**

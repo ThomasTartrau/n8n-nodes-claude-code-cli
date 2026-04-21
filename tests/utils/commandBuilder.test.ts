@@ -1041,6 +1041,60 @@ describe("commandBuilder", () => {
 			expect(result.env?.CLAUDE_CODE_MAX_OUTPUT_TOKENS).toBe("2048");
 			expect(result.env?.ANTHROPIC_API_KEY).toBe("sk-test-123");
 		});
+
+		it("should include per-execution envVars in env", () => {
+			const options: ClaudeCodeExecutionOptions = {
+				prompt: "Test",
+				outputFormat: "json",
+				envVars: { FOO: "bar" },
+			};
+
+			const result = buildCommand(options, defaultCredentials);
+
+			expect(result.env).toBeDefined();
+			expect(result.env?.FOO).toBe("bar");
+		});
+
+		it("should override credential envVars with per-execution envVars", () => {
+			const credentials: LocalCredentials = sampleCredentials.local;
+			const options: ClaudeCodeExecutionOptions = {
+				prompt: "Test",
+				outputFormat: "json",
+				envVars: { ANTHROPIC_API_KEY: "override" },
+			};
+
+			const result = buildCommand(options, credentials);
+
+			expect(result.env).toBeDefined();
+			expect(result.env?.ANTHROPIC_API_KEY).toBe("override");
+		});
+
+		it("should merge credential envVars with per-execution envVars", () => {
+			const credentials: LocalCredentials = sampleCredentials.local;
+			const options: ClaudeCodeExecutionOptions = {
+				prompt: "Test",
+				outputFormat: "json",
+				envVars: { CUSTOM: "value" },
+			};
+
+			const result = buildCommand(options, credentials);
+
+			expect(result.env).toBeDefined();
+			expect(result.env?.ANTHROPIC_API_KEY).toBe("sk-test-123");
+			expect(result.env?.CUSTOM).toBe("value");
+		});
+
+		it("should not include env when envVars is empty object", () => {
+			const options: ClaudeCodeExecutionOptions = {
+				prompt: "Test",
+				outputFormat: "json",
+				envVars: {},
+			};
+
+			const result = buildCommand(options, defaultCredentials);
+
+			expect(result.env).toBeUndefined();
+		});
 	});
 
 	describe("buildShellCommand", () => {

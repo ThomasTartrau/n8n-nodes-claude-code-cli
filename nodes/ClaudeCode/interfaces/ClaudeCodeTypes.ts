@@ -141,6 +141,7 @@ export interface ClaudeCodeExecutionOptions {
 	worktree?: string;
 	effort?: ReasoningEffort;
 	maxOutputTokens?: number;
+	envVars?: Record<string, string>;
 }
 
 /**

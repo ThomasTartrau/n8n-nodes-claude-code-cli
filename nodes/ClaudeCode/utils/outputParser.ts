@@ -17,35 +17,62 @@ function createDefaultOutput(): ClaudeCodeJsonOutput {
 }
 
 /**
- * Parses JSON output from Claude Code CLI
+ * Converts a stream result event to ClaudeCodeJsonOutput format.
+ * Stream events have {type: "result", result, session_id, ...} while
+ * json-format output has {session_id, result, is_error, ...}.
+ */
+function streamEventToJsonOutput(
+	event: Record<string, unknown>,
+): ClaudeCodeJsonOutput {
+	return {
+		session_id: (event.session_id as string) || "",
+		result: event.result as string | undefined,
+		is_error: event.subtype === "error" || event.subtype === "error_max_turns",
+		total_cost_usd: event.total_cost_usd as number | undefined,
+		total_duration_ms: event.total_duration_ms as number | undefined,
+		total_duration_api_ms: event.total_duration_api_ms as number | undefined,
+		num_turns: event.num_turns as number | undefined,
+		usage: event.usage as
+			| { input_tokens: number; output_tokens: number }
+			| undefined,
+	};
+}
+
+/**
+ * Parses JSON output from Claude Code CLI.
+ * Handles mixed output (warnings/non-JSON lines before JSON),
+ * standard json-format output, and stream-json result events
+ * (produced when --verbose is used with --output-format json).
  */
 export function parseJsonOutput(output: string): ClaudeCodeJsonOutput {
 	if (!output.trim()) {
 		return createDefaultOutput();
 	}
 
-	const trimmedOutput = output.trim();
+	const lines = output.trim().split("\n");
+	let lastValidJson: ClaudeCodeJsonOutput | null = null;
 
-	// If it starts with {, try to parse as single JSON object
-	if (trimmedOutput.startsWith("{")) {
-		// Find the last complete JSON object (in case of multiple lines)
-		const lines = trimmedOutput.split("\n");
-		let lastValidJson: ClaudeCodeJsonOutput | null = null;
+	for (const line of lines) {
+		const trimmedLine = line.trim();
+		if (!trimmedLine.startsWith("{")) {
+			continue;
+		}
 
-		for (const line of lines) {
-			const trimmedLine = line.trim();
-			if (trimmedLine.startsWith("{")) {
-				const parsed = JSON.parse(trimmedLine) as ClaudeCodeJsonOutput;
-				lastValidJson = parsed;
+		try {
+			const parsed = JSON.parse(trimmedLine) as Record<string, unknown>;
+
+			if (parsed.type === "result") {
+				lastValidJson = streamEventToJsonOutput(parsed);
+			} else if ("session_id" in parsed || "result" in parsed || "is_error" in parsed) {
+				lastValidJson = parsed as unknown as ClaudeCodeJsonOutput;
 			}
+		} catch {
+			// Skip malformed JSON lines
 		}
+	}
 
-		if (lastValidJson) {
-			return lastValidJson;
-		}
-
-		// Fallback: try parsing the entire output as single JSON
-		return JSON.parse(trimmedOutput) as ClaudeCodeJsonOutput;
+	if (lastValidJson) {
+		return lastValidJson;
 	}
 
 	return createDefaultOutput();
@@ -122,11 +149,15 @@ export function parseStreamJsonOutput(output: string): {
 			continue;
 		}
 
-		const event = JSON.parse(trimmedLine) as StreamEvent;
-		events.push(event);
+		try {
+			const event = JSON.parse(trimmedLine) as StreamEvent;
+			events.push(event);
 
-		if (event.type === "result") {
-			resultEvent = event as StreamResultEvent;
+			if (event.type === "result") {
+				resultEvent = event as StreamResultEvent;
+			}
+		} catch {
+			// Skip malformed JSON lines (K8s warnings, MCP errors, etc.)
 		}
 	}
 

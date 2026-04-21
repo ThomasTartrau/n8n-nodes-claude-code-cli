@@ -831,5 +831,87 @@ describe("optionsBuilder", () => {
 
 			expect(result.maxOutputTokens).toBeUndefined();
 		});
+
+		it("should parse envVars from options", () => {
+			const params = {
+				...defaultExecutePromptParams,
+				options: { envVars: '{"FOO":"bar","BAZ":"qux"}' },
+			};
+			const context = createTestContext(params) as IExecuteFunctions;
+
+			const result = buildExecutionOptions(context, 0, "executePrompt");
+
+			expect(result.envVars).toEqual({ FOO: "bar", BAZ: "qux" });
+		});
+
+		it("should leave envVars undefined when not set", () => {
+			const context = createTestContext(
+				defaultExecutePromptParams,
+			) as IExecuteFunctions;
+
+			const result = buildExecutionOptions(context, 0, "executePrompt");
+
+			expect(result.envVars).toBeUndefined();
+		});
+
+		it("should leave envVars undefined when empty JSON object", () => {
+			const params = {
+				...defaultExecutePromptParams,
+				options: { envVars: '{}' },
+			};
+			const context = createTestContext(params) as IExecuteFunctions;
+
+			const result = buildExecutionOptions(context, 0, "executePrompt");
+
+			expect(result.envVars).toBeUndefined();
+		});
+
+		it("should leave envVars undefined when empty string", () => {
+			const params = {
+				...defaultExecutePromptParams,
+				options: { envVars: '' },
+			};
+			const context = createTestContext(params) as IExecuteFunctions;
+
+			const result = buildExecutionOptions(context, 0, "executePrompt");
+
+			expect(result.envVars).toBeUndefined();
+		});
+
+		it("should throw descriptive error for invalid envVars JSON", () => {
+			const params = {
+				...defaultExecutePromptParams,
+				options: { envVars: '{not valid json}' },
+			};
+			const context = createTestContext(params) as IExecuteFunctions;
+
+			expect(() =>
+				buildExecutionOptions(context, 0, "executePrompt"),
+			).toThrow(/Invalid envVars JSON/);
+		});
+
+		it("should throw error for invalid env var key name", () => {
+			const params = {
+				...defaultExecutePromptParams,
+				options: { envVars: '{"foo;bar":"value"}' },
+			};
+			const context = createTestContext(params) as IExecuteFunctions;
+
+			expect(() =>
+				buildExecutionOptions(context, 0, "executePrompt"),
+			).toThrow(/Invalid environment variable name: "foo;bar"/);
+		});
+
+		it("should throw error for non-string env var value", () => {
+			const params = {
+				...defaultExecutePromptParams,
+				options: { envVars: '{"VALID_KEY":123}' },
+			};
+			const context = createTestContext(params) as IExecuteFunctions;
+
+			expect(() =>
+				buildExecutionOptions(context, 0, "executePrompt"),
+			).toThrow(/Environment variable "VALID_KEY" must be a string, got number/);
+		});
 	});
 });

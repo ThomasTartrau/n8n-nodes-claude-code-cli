@@ -63,9 +63,14 @@ function buildCredentialInjectionPrefix(credentials: K8sCredentials): string {
 }
 
 /**
- * Builds environment variables from credentials
+ * Builds environment variables from credentials, CLI-driven env flags, and
+ * optional per-execution overrides.  Order matters: credential-level → CLI
+ * flags → per-execution overrides (last wins via dedup).
  */
-function buildEnvVars(credentials: K8sCredentials): V1EnvVar[] {
+function buildEnvVars(
+	credentials: K8sCredentials,
+	options?: ClaudeCodeExecutionOptions,
+): V1EnvVar[] {
 	const envVars: V1EnvVar[] = [];
 
 	if (credentials.claudeOAuthCredentials) {
@@ -78,7 +83,28 @@ function buildEnvVars(credentials: K8sCredentials): V1EnvVar[] {
 	if (credentials.envVars && credentials.envVars !== "{}") {
 		const parsed = JSON.parse(credentials.envVars) as Record<string, string>;
 		for (const [key, value] of Object.entries(parsed)) {
-			envVars.push({ name: key, value: String(value) });
+			envVars.push({ name: key, value });
+		}
+	}
+
+	if (options) {
+		// CLI-driven env flags (before per-execution so user overrides win)
+		if (options.extendedContext === false) {
+			envVars.push({ name: "CLAUDE_CODE_DISABLE_1M_CONTEXT", value: "1" });
+		}
+		if (options.maxOutputTokens && options.maxOutputTokens > 0) {
+			envVars.push({ name: "CLAUDE_CODE_MAX_OUTPUT_TOKENS", value: String(options.maxOutputTokens) });
+		}
+
+		// Per-execution env vars (override everything above)
+		if (options.envVars) {
+			for (const [key, value] of Object.entries(options.envVars)) {
+				const existingIndex = envVars.findIndex(e => e.name === key);
+				if (existingIndex >= 0) {
+					envVars.splice(existingIndex, 1);
+				}
+				envVars.push({ name: key, value });
+			}
 		}
 	}
 
@@ -117,16 +143,8 @@ export function buildEphemeralPodSpec(
 		options.workingDirectory || credentials.defaultWorkingDir || "/workspace";
 
 	const claudeArgs = buildClaudeArgs(options);
-	const envVars = buildEnvVars(credentials);
+	const envVars = buildEnvVars(credentials, options);
 	const limits = buildResourceLimits(credentials);
-
-	// Extended context (1M tokens)
-	if (options.extendedContext === false) {
-		envVars.push({
-			name: "CLAUDE_CODE_DISABLE_1M_CONTEXT",
-			value: "1",
-		});
-	}
 
 	const credentialPrefix = buildCredentialInjectionPrefix(credentials);
 
@@ -297,7 +315,55 @@ export function buildClaudeArgs(options: ClaudeCodeExecutionOptions): string[] {
 	}
 
 	if (options.systemPrompt) {
-		args.push("--append-system-prompt", options.systemPrompt);
+		if (options.systemPromptMode === "replace") {
+			args.push("--system-prompt", options.systemPrompt);
+		} else {
+			args.push("--append-system-prompt", options.systemPrompt);
+		}
+	}
+
+	// System prompt (from file)
+	if (options.systemPromptFile) {
+		if (options.systemPromptMode === "replace") {
+			args.push("--system-prompt-file", options.systemPromptFile);
+		} else {
+			args.push("--append-system-prompt-file", options.systemPromptFile);
+		}
+	}
+
+	// Verbose mode (explicit user toggle, independent of stream-json auto-verbose)
+	if (options.verbose && options.outputFormat !== "stream-json") {
+		args.push("--verbose");
+	}
+
+	// Reasoning effort
+	if (options.effort && options.effort !== "high") {
+		args.push("--effort", options.effort);
+	}
+
+	// Max budget (cost control)
+	if (options.maxBudgetUsd && options.maxBudgetUsd > 0) {
+		args.push("--max-budget-usd", String(options.maxBudgetUsd));
+	}
+
+	// JSON schema (structured output)
+	if (options.jsonSchema) {
+		args.push("--json-schema", options.jsonSchema);
+	}
+
+	// Fallback model
+	if (options.fallbackModel) {
+		args.push("--fallback-model", options.fallbackModel);
+	}
+
+	// Worktree isolation — "" means bare --worktree (auto-name), set by optionsBuilder
+	// when user enables worktree toggle without specifying a name
+	if (options.worktree !== undefined && options.worktree !== null) {
+		if (options.worktree) {
+			args.push("--worktree", options.worktree);
+		} else {
+			args.push("--worktree");
+		}
 	}
 
 	if (options.contextFiles && options.contextFiles.length > 0) {

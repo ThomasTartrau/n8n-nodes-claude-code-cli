@@ -1,6 +1,7 @@
 export {
 	buildCommand,
 	escapeShellArg,
+	escapeShellValue,
 	buildShellCommand,
 } from "./commandBuilder.js";
 export {
