@@ -1,5 +1,8 @@
 import { describe, it, expect } from "vitest";
-import { buildEphemeralPodSpec, buildClaudeArgs } from "../../nodes/ClaudeCode/transport/k8s/podSpecBuilder.js";
+import {
+	buildEphemeralPodSpec,
+	buildClaudeArgs,
+} from "../../nodes/ClaudeCode/transport/k8s/podSpecBuilder.js";
 import type {
 	K8sCredentials,
 	ClaudeCodeExecutionOptions,
@@ -247,7 +250,7 @@ describe("podSpecBuilder", () => {
 			);
 		});
 
-		it('should include --system-prompt-file when systemPromptFile set with replace mode', () => {
+		it("should include --system-prompt-file when systemPromptFile set with replace mode", () => {
 			const options: ClaudeCodeExecutionOptions = {
 				prompt: "Test",
 				outputFormat: "json",

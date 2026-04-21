@@ -27,3 +27,5 @@ coverage/
 
 # claude-config
 docker/production/claude-config
+.codegraph
+.codegraph.cache

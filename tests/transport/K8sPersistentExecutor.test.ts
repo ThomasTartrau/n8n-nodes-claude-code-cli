@@ -49,9 +49,7 @@ describe("K8sPersistentExecutor envVar shell escaping", () => {
 		});
 
 		it("should safely contain backticks (no command substitution)", () => {
-			expect(buildEnvExport("FOO", "`whoami`")).toBe(
-				"export FOO='`whoami`'",
-			);
+			expect(buildEnvExport("FOO", "`whoami`")).toBe("export FOO='`whoami`'");
 		});
 
 		it("should safely contain $() command substitution syntax", () => {

@@ -63,7 +63,11 @@ export function parseJsonOutput(output: string): ClaudeCodeJsonOutput {
 
 			if (parsed.type === "result") {
 				lastValidJson = streamEventToJsonOutput(parsed);
-			} else if ("session_id" in parsed || "result" in parsed || "is_error" in parsed) {
+			} else if (
+				"session_id" in parsed ||
+				"result" in parsed ||
+				"is_error" in parsed
+			) {
 				lastValidJson = parsed as unknown as ClaudeCodeJsonOutput;
 			}
 		} catch {

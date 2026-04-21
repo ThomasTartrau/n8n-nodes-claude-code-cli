@@ -287,11 +287,17 @@ export function buildExecutionOptions(
 				`Invalid envVars JSON: ${err instanceof Error ? err.message : String(err)}`,
 			);
 		}
-		if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) {
+		if (
+			typeof parsed !== "object" ||
+			parsed === null ||
+			Array.isArray(parsed)
+		) {
 			throw new Error("envVars must be a JSON object");
 		}
 		const ENV_KEY_RE = /^[A-Za-z_][A-Za-z0-9_]*$/;
-		for (const [key, value] of Object.entries(parsed as Record<string, unknown>)) {
+		for (const [key, value] of Object.entries(
+			parsed as Record<string, unknown>,
+		)) {
 			if (!ENV_KEY_RE.test(key)) {
 				throw new Error(
 					`Invalid environment variable name: "${key}". Names must match /^[A-Za-z_][A-Za-z0-9_]*$/.`,

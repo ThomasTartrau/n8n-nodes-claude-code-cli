@@ -93,13 +93,16 @@ function buildEnvVars(
 			envVars.push({ name: "CLAUDE_CODE_DISABLE_1M_CONTEXT", value: "1" });
 		}
 		if (options.maxOutputTokens && options.maxOutputTokens > 0) {
-			envVars.push({ name: "CLAUDE_CODE_MAX_OUTPUT_TOKENS", value: String(options.maxOutputTokens) });
+			envVars.push({
+				name: "CLAUDE_CODE_MAX_OUTPUT_TOKENS",
+				value: String(options.maxOutputTokens),
+			});
 		}
 
 		// Per-execution env vars (override everything above)
 		if (options.envVars) {
 			for (const [key, value] of Object.entries(options.envVars)) {
-				const existingIndex = envVars.findIndex(e => e.name === key);
+				const existingIndex = envVars.findIndex((e) => e.name === key);
 				if (existingIndex >= 0) {
 					envVars.splice(existingIndex, 1);
 				}

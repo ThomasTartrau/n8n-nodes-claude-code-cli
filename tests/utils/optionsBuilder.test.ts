@@ -857,7 +857,7 @@ describe("optionsBuilder", () => {
 		it("should leave envVars undefined when empty JSON object", () => {
 			const params = {
 				...defaultExecutePromptParams,
-				options: { envVars: '{}' },
+				options: { envVars: "{}" },
 			};
 			const context = createTestContext(params) as IExecuteFunctions;
 
@@ -869,7 +869,7 @@ describe("optionsBuilder", () => {
 		it("should leave envVars undefined when empty string", () => {
 			const params = {
 				...defaultExecutePromptParams,
-				options: { envVars: '' },
+				options: { envVars: "" },
 			};
 			const context = createTestContext(params) as IExecuteFunctions;
 
@@ -881,13 +881,13 @@ describe("optionsBuilder", () => {
 		it("should throw descriptive error for invalid envVars JSON", () => {
 			const params = {
 				...defaultExecutePromptParams,
-				options: { envVars: '{not valid json}' },
+				options: { envVars: "{not valid json}" },
 			};
 			const context = createTestContext(params) as IExecuteFunctions;
 
-			expect(() =>
-				buildExecutionOptions(context, 0, "executePrompt"),
-			).toThrow(/Invalid envVars JSON/);
+			expect(() => buildExecutionOptions(context, 0, "executePrompt")).toThrow(
+				/Invalid envVars JSON/,
+			);
 		});
 
 		it("should throw error for invalid env var key name", () => {
@@ -897,9 +897,9 @@ describe("optionsBuilder", () => {
 			};
 			const context = createTestContext(params) as IExecuteFunctions;
 
-			expect(() =>
-				buildExecutionOptions(context, 0, "executePrompt"),
-			).toThrow(/Invalid environment variable name: "foo;bar"/);
+			expect(() => buildExecutionOptions(context, 0, "executePrompt")).toThrow(
+				/Invalid environment variable name: "foo;bar"/,
+			);
 		});
 
 		it("should throw error for non-string env var value", () => {
@@ -909,9 +909,9 @@ describe("optionsBuilder", () => {
 			};
 			const context = createTestContext(params) as IExecuteFunctions;
 
-			expect(() =>
-				buildExecutionOptions(context, 0, "executePrompt"),
-			).toThrow(/Environment variable "VALID_KEY" must be a string, got number/);
+			expect(() => buildExecutionOptions(context, 0, "executePrompt")).toThrow(
+				/Environment variable "VALID_KEY" must be a string, got number/,
+			);
 		});
 	});
 });
