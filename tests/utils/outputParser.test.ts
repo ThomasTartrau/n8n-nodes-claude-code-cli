@@ -11,6 +11,7 @@ import {
 	invalidJsonOutputs,
 	parsedOutputs,
 	validStreamJsonOutputs,
+	prefixedJsonOutputs,
 } from "../fixtures/mockOutputs.js";
 
 describe("outputParser", () => {
@@ -93,16 +94,18 @@ describe("outputParser", () => {
 			expect(result.result).toBeUndefined();
 		});
 
-		it("should throw on malformed JSON", () => {
-			expect(() => parseJsonOutput(invalidJsonOutputs.malformed)).toThrow(
-				SyntaxError,
-			);
+		it("should return default output for malformed JSON", () => {
+			const result = parseJsonOutput(invalidJsonOutputs.malformed);
+
+			expect(result.session_id).toBe("");
+			expect(result.result).toBeUndefined();
 		});
 
-		it("should throw on partial JSON", () => {
-			expect(() => parseJsonOutput(invalidJsonOutputs.partialJson)).toThrow(
-				SyntaxError,
-			);
+		it("should return default output for partial JSON", () => {
+			const result = parseJsonOutput(invalidJsonOutputs.partialJson);
+
+			expect(result.session_id).toBe("");
+			expect(result.result).toBeUndefined();
 		});
 
 		it("should handle JSON with extra whitespace around it", () => {
@@ -127,6 +130,48 @@ describe("outputParser", () => {
 
 			expect(result.session_id).toBe("nested");
 			expect(result.usage?.input_tokens).toBe(100);
+		});
+
+		it("should parse JSON after warning prefix lines", () => {
+			const result = parseJsonOutput(prefixedJsonOutputs.warningPrefix);
+
+			expect(result.session_id).toBe("after-warning");
+			expect(result.result).toBe("Task done");
+			expect(result.is_error).toBe(false);
+		});
+
+		it("should parse JSON after multiple non-JSON prefix lines", () => {
+			const result = parseJsonOutput(prefixedJsonOutputs.multipleWarnings);
+
+			expect(result.session_id).toBe("after-multi-warn");
+			expect(result.result).toBe("OK");
+			expect(result.num_turns).toBe(5);
+		});
+
+		it("should convert stream result event to json output format", () => {
+			const result = parseJsonOutput(prefixedJsonOutputs.streamEventWithPrefix);
+
+			expect(result.session_id).toBe("prefixed-stream");
+			expect(result.result).toBe("Analysis complete");
+			expect(result.is_error).toBe(false);
+			expect(result.total_cost_usd).toBe(0.03);
+			expect(result.num_turns).toBe(7);
+			expect(result.usage?.input_tokens).toBe(2000);
+			expect(result.usage?.output_tokens).toBe(500);
+		});
+
+		it("should convert stream error event correctly", () => {
+			const result = parseJsonOutput(prefixedJsonOutputs.streamErrorWithPrefix);
+
+			expect(result.result).toBe("Agent crashed");
+			expect(result.is_error).toBe(true);
+		});
+
+		it("should return default output when only non-JSON lines present", () => {
+			const result = parseJsonOutput(prefixedJsonOutputs.onlyWarnings);
+
+			expect(result.session_id).toBe("");
+			expect(result.result).toBeUndefined();
 		});
 	});
 
@@ -326,6 +371,32 @@ describe("outputParser", () => {
 
 			expect(events.length).toBe(2);
 			expect(result?.result).toBe("done");
+		});
+
+		it("should skip malformed JSON lines starting with {", () => {
+			const input = [
+				'{"type":"system","subtype":"init","session_id":"test"}',
+				'{"broken": ',
+				'{"type":"result","subtype":"success","result":"done"}',
+			].join("\n");
+
+			const { events, result } = parseStreamJsonOutput(input);
+
+			expect(events.length).toBe(2);
+			expect(result?.result).toBe("done");
+		});
+
+		it("should handle K8s warning prefixes before stream events", () => {
+			const input = [
+				"Warning: MCP servers blocked by enterprise policy: discord",
+				'{"type":"system","subtype":"init","session_id":"k8s-stream"}',
+				'{"type":"result","subtype":"success","result":"OK"}',
+			].join("\n");
+
+			const { events, result } = parseStreamJsonOutput(input);
+
+			expect(events.length).toBe(2);
+			expect(result?.result).toBe("OK");
 		});
 	});
 

@@ -59,6 +59,41 @@ export const invalidJsonOutputs: Record<string, string> = {
 };
 
 /**
+ * JSON output with non-JSON prefix lines (warnings, MCP errors, etc.)
+ */
+export const prefixedJsonOutputs: Record<string, string> = {
+	warningPrefix: [
+		"Warning: MCP servers blocked by enterprise policy: discord, homeassistant",
+		'{"session_id":"after-warning","result":"Task done","is_error":false}',
+	].join("\n"),
+
+	multipleWarnings: [
+		"Warning: MCP server blocked by enterprise policy: homeassistant",
+		"Warning: MCP server blocked by enterprise policy: discord",
+		"Some other log line",
+		'{"session_id":"after-multi-warn","result":"OK","is_error":false,"num_turns":5}',
+	].join("\n"),
+
+	streamEventWithPrefix: [
+		"Warning: MCP servers blocked by enterprise policy: discord, kubectl",
+		'{"type":"system","subtype":"init","session_id":"prefixed-stream"}',
+		'{"type":"assistant","message":{"content":[{"type":"text","text":"Working..."}]}}',
+		'{"type":"result","subtype":"success","session_id":"prefixed-stream","result":"Analysis complete","total_cost_usd":0.03,"num_turns":7,"usage":{"input_tokens":2000,"output_tokens":500}}',
+	].join("\n"),
+
+	streamErrorWithPrefix: [
+		"Warning: something",
+		'{"type":"result","subtype":"error","result":"Agent crashed"}',
+	].join("\n"),
+
+	onlyWarnings: [
+		"Warning: MCP servers blocked",
+		"Error: could not connect",
+		"Some other non-JSON text",
+	].join("\n"),
+};
+
+/**
  * Sample credentials for testing
  */
 export const sampleCredentials: Record<string, LocalCredentials> = {

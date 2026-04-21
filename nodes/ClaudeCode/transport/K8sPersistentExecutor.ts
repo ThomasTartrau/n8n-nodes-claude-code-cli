@@ -11,6 +11,7 @@ import {
 	createErrorResult,
 	parseStreamJsonOutput,
 	normalizeStreamOutput,
+	escapeShellValue,
 } from "../utils/index.js";
 import {
 	createK8sClients,
@@ -201,10 +202,18 @@ export class K8sPersistentExecutor implements IClaudeCodeExecutor {
 						"/workspace";
 
 					// Build the full command with cd to workdir
-					const envPrefix =
+					let envPrefix =
 						options.extendedContext === false
 							? "export CLAUDE_CODE_DISABLE_1M_CONTEXT=1 && "
 							: "";
+
+					// Per-execution env vars (override credential-level)
+					if (options.envVars) {
+						for (const [key, value] of Object.entries(options.envVars)) {
+							envPrefix += `export ${key}='${escapeShellValue(value)}' && `;
+						}
+					}
+
 					const command = [
 						"sh",
 						"-c",

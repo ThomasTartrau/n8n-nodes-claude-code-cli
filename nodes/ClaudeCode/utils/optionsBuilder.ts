@@ -275,6 +275,37 @@ export function buildExecutionOptions(
 		}
 	}
 
+	// Parse per-execution environment variables
+	let envVars: Record<string, string> | undefined;
+	const envVarsStr = (options.envVars as string) || "";
+	if (envVarsStr && envVarsStr !== "{}") {
+		let parsed: unknown;
+		try {
+			parsed = JSON.parse(envVarsStr);
+		} catch (err) {
+			throw new Error(
+				`Invalid envVars JSON: ${err instanceof Error ? err.message : String(err)}`,
+			);
+		}
+		if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) {
+			throw new Error("envVars must be a JSON object");
+		}
+		const ENV_KEY_RE = /^[A-Za-z_][A-Za-z0-9_]*$/;
+		for (const [key, value] of Object.entries(parsed as Record<string, unknown>)) {
+			if (!ENV_KEY_RE.test(key)) {
+				throw new Error(
+					`Invalid environment variable name: "${key}". Names must match /^[A-Za-z_][A-Za-z0-9_]*$/.`,
+				);
+			}
+			if (typeof value !== "string") {
+				throw new Error(
+					`Environment variable "${key}" must be a string, got ${typeof value}.`,
+				);
+			}
+		}
+		envVars = parsed as Record<string, string>;
+	}
+
 	return {
 		prompt,
 		workingDirectory: options.workingDirectory as string | undefined,
@@ -307,5 +338,6 @@ export function buildExecutionOptions(
 				? (options.effort as ReasoningEffort)
 				: undefined,
 		maxOutputTokens: (options.maxOutputTokens as number) || undefined,
+		envVars,
 	};
 }

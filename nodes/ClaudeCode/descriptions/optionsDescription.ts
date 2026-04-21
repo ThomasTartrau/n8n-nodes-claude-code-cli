@@ -18,6 +18,18 @@ export const optionsDescription: INodeProperties[] = [
 					"Working directory for Claude Code execution. Overrides the default from credentials.",
 			},
 			{
+				displayName: "Environment Variables",
+				name: "envVars",
+				type: "string",
+				typeOptions: {
+					rows: 4,
+				},
+				default: "",
+				placeholder: '{"CLONE_URL": "git@github.com:org/repo.git"}',
+				description:
+					"JSON object of environment variables to set for this execution. Merges with (and overrides) credential-level env vars.",
+			},
+			{
 				displayName: "Output Format",
 				name: "outputFormat",
 				type: "options",
