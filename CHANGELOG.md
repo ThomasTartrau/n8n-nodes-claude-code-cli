@@ -1,3 +1,15 @@
+# [1.9.0](https://github.com/ThomasTartrau/n8n-nodes-claude-code-cli/compare/v1.8.0...v1.9.0) (2026-04-21)
+
+
+### Features
+
+* add per-execution environment variables and fix output parsing ([be66320](https://github.com/ThomasTartrau/n8n-nodes-claude-code-cli/commit/be66320846a029233deab631cbd65f7ac3264f9d))
+
+
+### Reverts
+
+* undo failed 1.9.0 release commit ([70db5a8](https://github.com/ThomasTartrau/n8n-nodes-claude-code-cli/commit/70db5a828609a386fe9013fcfe476bf3aaae1e89))
+
 # [1.8.0](https://github.com/ThomasTartrau/n8n-nodes-claude-code-cli/compare/v1.7.0...v1.8.0) (2026-03-14)
 
 
