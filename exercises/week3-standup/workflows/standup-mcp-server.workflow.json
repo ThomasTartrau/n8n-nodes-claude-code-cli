@@ -1,0 +1,67 @@
+{
+  "name": "Standup MCP Server",
+  "nodes": [
+    {
+      "parameters": {
+        "path": "6a7916bc-0373-4b59-b93d-9e57cbc5e8ad"
+      },
+      "type": "@n8n/n8n-nodes-langchain.mcpTrigger",
+      "typeVersion": 2,
+      "position": [
+        0,
+        0
+      ],
+      "id": "9b10cad4-b5d0-42bf-993e-190ec85f439f",
+      "name": "MCP Server Trigger",
+      "webhookId": "6a7916bc-0373-4b59-b93d-9e57cbc5e8ad"
+    },
+    {
+      "parameters": {
+        "description": "Run the daily standup workflow and return the standup summary",
+        "workflowId": {
+          "__rl": true,
+          "value": "NYwlJSi8stHkaPv6",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/NYwlJSi8stHkaPv6",
+          "cachedResultName": "Daily Standup"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {},
+          "matchingColumns": [],
+          "schema": [],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 2.2,
+      "position": [
+        96,
+        208
+      ],
+      "id": "ae6d704c-7c6e-456d-9357-106978ce0be6",
+      "name": "run_standup_workflow"
+    }
+  ],
+  "connections": {
+    "run_standup_workflow": {
+      "ai_tool": [
+        [
+          {
+            "node": "MCP Server Trigger",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "timeSavedMode": "fixed",
+    "callerPolicy": "workflowsFromSameOwner",
+    "availableInMCP": false
+  }
+}

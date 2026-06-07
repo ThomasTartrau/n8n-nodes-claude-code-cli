@@ -1,0 +1,259 @@
+{
+  "name": "Daily Standup",
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -80,
+        96
+      ],
+      "id": "8fe431ac-9b6d-4c74-9602-4bac4a50e850",
+      "name": "When clicking ‘Execute workflow’"
+    },
+    {
+      "parameters": {
+        "jsCode": "  function grab(name) {\n    try { return $(name).all().map(i => i.json); } catch (e) { return []; }\n  }\n\n  // --- GitHub ---\n  let gh = grab('GitHub Commits');\n  if (gh.length === 1 && Array.isArray(gh[0])) gh = gh[0];\n  const ghLines = gh.length\n    ? gh.map(c => `- ${(c.sha||'').slice(0,7)} ${(c.commit?.message||'').split('\\n')[0]}`).join('\\n')\n    : '- (no commits in last 24h)';\n\n  // --- Redmine ({ issues: [...] }) ---\n  let rm = grab('Redmine Issues');\n  let issues = (rm.length === 1 && Array.isArray(rm[0]?.issues)) ? rm[0].issues : rm;\n  const rmLines = issues.length\n    ? issues.map(i => `- #${i.id} [${i.status?.name||''}] ${i.subject||''}`).join('\\n')\n    : '- (no Redmine issues)';\n\n  const activity = `\n  GitHub commits (last 24h):\n  ${ghLines}\n\n  Redmine issues assigned to me:\n  ${rmLines}\n\n  Slack messages today:\n  - (Slack chưa kết nối)\n  `.trim();\n\n  return [{ json: { activity } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        576,
+        0
+      ],
+      "id": "f00e78b6-d7b4-4949-bbe8-7059e234d9ca",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "connectionMode": "docker",
+        "operation": "resumeSession",
+        "prompt": "=  =Based on the following activity, write a daily standup in EXACTLY this format:\n\n  Yesterday:\n  - ...\n  Today:\n  - ...\n  Blockers:\n  - ...\n\n  Output only the standup, no preamble.\n\n  Activity:\n  {{ $json.activity }}",
+        "sessionId": "00000000-0000-4000-8000-000000000042",
+        "toolPermissions": {},
+        "options": {
+          "systemPrompt": "You are a concise daily standup assistant for a software engineer. Summarize activity into Yesterday / Today / Blockers. Be terse and factual.\nAt the very end, add a line \"Memory check:\" stating whether you recall my previous standup and summarize it in one sentence."
+        }
+      },
+      "type": "n8n-nodes-claude-code-cli.claudeCode",
+      "typeVersion": 1,
+      "position": [
+        736,
+        0
+      ],
+      "id": "75c03e5c-076a-448c-8bf5-0b8d898bb09f",
+      "name": "Claude Code",
+      "credentials": {
+        "claudeCodeDockerApi": {
+          "id": "YSOg9GwE1fiArOUx",
+          "name": "Claude Code Local account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "https://api.github.com/repos/tungnn-zigexn/react-portfolio-template/commits",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "githubApi",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "since",
+              "value": "=={{ $now.minus({ hours: 24 }).toISO() }}"
+            },
+            {
+              "name": "author",
+              "value": "tungnn-zigexn"
+            },
+            {
+              "name": "per_page",
+              "value": "50"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        192,
+        96
+      ],
+      "id": "d2596d75-7c7d-4e29-8b6f-f202aff0dbd7",
+      "name": "GitHub Commits",
+      "credentials": {
+        "githubApi": {
+          "id": "sKQd8h2hkSyVWijf",
+          "name": "GitHub account"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        416,
+        0
+      ],
+      "id": "69288d84-5447-467a-94a1-7c87a6626952",
+      "name": "Merge"
+    },
+    {
+      "parameters": {
+        "url": "https://dev.zigexn.vn/issues.json",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBasicAuth",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "assigned_to_id",
+              "value": "me"
+            },
+            {
+              "name": "status_id",
+              "value": "closed"
+            },
+            {
+              "name": "sort",
+              "value": "updated_on:desc"
+            },
+            {
+              "name": "limit",
+              "value": "25"
+            }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-Redmine-API-Key",
+              "value": "cab5275bbd41ea0d109beeba689beab902cde94e"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        192,
+        -160
+      ],
+      "id": "9e8c5218-1782-4243-b70d-e75b1cbc68b6",
+      "name": "Redmine Issues",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "PcpG6hFNqyChgZYH",
+          "name": "Header Auth account"
+        },
+        "httpBasicAuth": {
+          "id": "M7ZZTbuQE4Libuhi",
+          "name": "Unnamed credential"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "inputSource": "passthrough"
+      },
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -80,
+        -160
+      ],
+      "id": "b2a9556b-ddc2-45ee-8c83-c1a22e4e099a",
+      "name": "When Executed by Another Workflow"
+    }
+  ],
+  "connections": {
+    "When clicking ‘Execute workflow’": {
+      "main": [
+        [
+          {
+            "node": "Redmine Issues",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "GitHub Commits",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "Claude Code",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GitHub Commits": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Merge": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Redmine Issues": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When Executed by Another Workflow": {
+      "main": [
+        [
+          {
+            "node": "Redmine Issues",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "GitHub Commits",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "timeSavedMode": "fixed",
+    "callerPolicy": "workflowsFromSameOwner",
+    "availableInMCP": false
+  }
+}
