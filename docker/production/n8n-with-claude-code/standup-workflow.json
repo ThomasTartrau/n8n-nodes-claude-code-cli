@@ -1,0 +1,348 @@
+{
+  "name": "Smart Daily Standup Bot",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 9 * * 1-5"
+            }
+          ]
+        }
+      },
+      "id": "node-schedule-trigger",
+      "name": "Schedule Trigger (9AM Weekdays)",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [240, 300]
+    },
+    {
+      "parameters": {},
+      "id": "node-chat-trigger",
+      "name": "Chat Trigger (Manual)",
+      "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+      "typeVersion": 1.1,
+      "position": [240, 500],
+      "webhookId": "standup-chat-trigger"
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "https://api.github.com/repos/ZIGExN/tcv-usagi-web/commits",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "since",
+              "value": "={{ new Date(Date.now() - 24*60*60*1000).toISOString() }}"
+            },
+            {
+              "name": "per_page",
+              "value": "50"
+            }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer GITHUB_TOKEN_PLACEHOLDER"
+            },
+            {
+              "name": "Accept",
+              "value": "application/vnd.github.v3+json"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "node-github",
+      "name": "GitHub: Get Commits (24h)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [560, 160]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "https://dev.zigexn.vn/issues.json",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "assigned_to_id",
+              "value": "me"
+            },
+            {
+              "name": "updated_on",
+              "value": "=>={{ new Date().toISOString().split('T')[0] }}"
+            },
+            {
+              "name": "limit",
+              "value": "50"
+            },
+            {
+              "name": "status_id",
+              "value": "open"
+            }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-Redmine-API-Key",
+              "value": "REDMINE_API_KEY_PLACEHOLDER"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "node-redmine",
+      "name": "Redmine: Get Issues Today",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [560, 300]
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "channel": {
+          "__rl": true,
+          "value": "C0B94E14Y81",
+          "mode": "id"
+        },
+        "returnAll": false,
+        "limit": 50,
+        "filters": {
+          "oldest": "={{ Math.floor(new Date().setHours(0,0,0,0) / 1000) }}"
+        },
+        "options": {}
+      },
+      "id": "node-slack-read",
+      "name": "Slack: Get Today's Messages",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.2,
+      "position": [560, 440],
+      "credentials": {
+        "slackApi": {
+          "id": "slack-cred",
+          "name": "Slack Credential"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "returnAll": false,
+        "limit": 20,
+        "filters": {
+          "q": "after:{{ new Date(Date.now() - 24*60*60*1000).toLocaleDateString('en-US', {month:'short', day:'numeric', year:'numeric'}) }}"
+        },
+        "options": {}
+      },
+      "id": "node-gmail",
+      "name": "Gmail: Get Recent Emails (Optional)",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [560, 580],
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "gmail-cred",
+          "name": "Gmail OAuth2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Merge all data sources and build activity string\nconst today = new Date().toISOString().split('T')[0];\n\n// --- GitHub commits ---\nlet githubItems = [];\ntry {\n  const raw = $('GitHub: Get Commits (24h)').all();\n  for (const item of raw) {\n    const commits = Array.isArray(item.json) ? item.json : [];\n    for (const commit of commits) {\n      githubItems.push({\n        source: 'GitHub',\n        type: 'commit',\n        id: commit.sha ? commit.sha.slice(0, 7) : 'unknown',\n        title: commit.commit?.message?.split('\\n')[0] || 'No message',\n        author: commit.commit?.author?.name || 'Unknown',\n        url: commit.html_url || '',\n        timestamp: commit.commit?.author?.date || ''\n      });\n    }\n  }\n} catch(e) {\n  githubItems = [{ source: 'GitHub', type: 'error', title: 'Could not fetch commits: ' + e.message }];\n}\n\n// --- Redmine issues ---\nlet redmineItems = [];\ntry {\n  const raw = $('Redmine: Get Issues Today').all();\n  for (const item of raw) {\n    const issues = item.json?.issues || [];\n    for (const issue of issues) {\n      redmineItems.push({\n        source: 'Redmine',\n        type: 'issue',\n        id: String(issue.id),\n        title: issue.subject || 'No subject',\n        status: issue.status?.name || 'Unknown',\n        priority: issue.priority?.name || 'Normal',\n        project: issue.project?.name || 'Unknown',\n        updated: issue.updated_on || ''\n      });\n    }\n  }\n} catch(e) {\n  redmineItems = [{ source: 'Redmine', type: 'error', title: 'Could not fetch issues: ' + e.message }];\n}\n\n// --- Slack messages ---\nlet slackItems = [];\ntry {\n  const raw = $('Slack: Get Today\\'s Messages').all();\n  for (const item of raw) {\n    const messages = Array.isArray(item.json) ? item.json : (item.json?.messages || []);\n    for (const msg of messages) {\n      if (!msg.bot_id && msg.text && msg.text.trim()) {\n        slackItems.push({\n          source: 'Slack',\n          type: 'message',\n          id: msg.ts || '',\n          title: msg.text.slice(0, 200),\n          user: msg.user || 'unknown',\n          timestamp: msg.ts || ''\n        });\n      }\n    }\n  }\n} catch(e) {\n  slackItems = [{ source: 'Slack', type: 'error', title: 'Could not fetch messages: ' + e.message }];\n}\n\n// --- Gmail (optional) ---\nlet gmailItems = [];\ntry {\n  const raw = $('Gmail: Get Recent Emails (Optional)').all();\n  for (const item of raw) {\n    const emails = Array.isArray(item.json) ? item.json : [];\n    for (const email of emails) {\n      gmailItems.push({\n        source: 'Gmail',\n        type: 'email',\n        id: email.id || '',\n        title: email.subject || '(no subject)',\n        from: email.from || 'unknown',\n        timestamp: email.date || ''\n      });\n    }\n  }\n} catch(e) {\n  gmailItems = [];\n}\n\n// --- Deduplicate by id+source ---\nconst seen = new Set();\nconst allItems = [...githubItems, ...redmineItems, ...slackItems, ...gmailItems].filter(item => {\n  const key = `${item.source}:${item.id}`;\n  if (seen.has(key)) return false;\n  seen.add(key);\n  return true;\n});\n\n// --- Build formatted activity string ---\nlet activityText = `Activity summary for ${today}:\\n\\n`;\n\nif (githubItems.length > 0) {\n  activityText += `## GitHub Commits (last 24h):\\n`;\n  for (const c of githubItems) {\n    activityText += `- [${c.id}] ${c.title} (by ${c.author})\\n`;\n  }\n  activityText += '\\n';\n}\n\nif (redmineItems.length > 0) {\n  activityText += `## Redmine Issues (assigned to me, updated today):\\n`;\n  for (const i of redmineItems) {\n    activityText += `- #${i.id} [${i.status}] ${i.title} (${i.project})\\n`;\n  }\n  activityText += '\\n';\n}\n\nif (slackItems.length > 0 && slackItems.length <= 10) {\n  activityText += `## Slack Activity (today):\\n`;\n  for (const m of slackItems.slice(0, 10)) {\n    activityText += `- ${m.title}\\n`;\n  }\n  activityText += '\\n';\n}\n\nif (gmailItems.length > 0) {\n  activityText += `## Recent Emails:\\n`;\n  for (const e of gmailItems.slice(0, 5)) {\n    activityText += `- ${e.title} (from: ${e.from})\\n`;\n  }\n  activityText += '\\n';\n}\n\nif (allItems.length === 0) {\n  activityText += 'No activity found from any source. Please describe manually what you worked on.\\n';\n}\n\nreturn [{\n  json: {\n    today,\n    activityText,\n    stats: {\n      githubCommits: githubItems.length,\n      redmineIssues: redmineItems.length,\n      slackMessages: slackItems.length,\n      gmailEmails: gmailItems.length\n    }\n  }\n}];"
+      },
+      "id": "node-merge-code",
+      "name": "Code: Merge & Deduplicate Sources",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [860, 360]
+    },
+    {
+      "parameters": {
+        "sessionId": "standup-trinpm",
+        "contextWindowLength": 10
+      },
+      "id": "node-memory",
+      "name": "Window Buffer Memory",
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [1100, 520]
+    },
+    {
+      "parameters": {
+        "connectionMode": "local",
+        "operation": "executePrompt",
+        "prompt": "={{ 'You are a helpful standup assistant. Based on this activity data, write a daily standup report.\\n\\nFormat:\\n📋 Daily Standup — ' + $json.today + '\\n\\nYesterday:\\n• [completed items]\\n\\nToday:\\n• [planned items based on open issues]\\n\\nBlockers:\\n• [any blockers, or None]\\n\\nBe concise and specific — reference issue numbers and commit SHAs when available.\\n\\n' + $json.activityText }}",
+        "model": "",
+        "permissionMode": "bypassPermissions",
+        "options": {}
+      },
+      "id": "node-claude",
+      "name": "Claude Code CLI: Generate Standup",
+      "type": "n8n-nodes-claude-code-cli.claudeCode",
+      "typeVersion": 1,
+      "position": [1100, 360]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "SLACK_WEBHOOK_URL_PLACEHOLDER",
+        "sendBody": true,
+        "contentType": "json",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "text",
+              "value": "={{ $json.output || $json.response || $json.text }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "node-slack-send",
+      "name": "Slack: Post Standup to DM",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1340, 360]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "run-standup",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "node-webhook-trigger",
+      "name": "Webhook: MCP Entry (run_standup_workflow)",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [240, 700],
+      "webhookId": "run-standup-workflow"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={ \"status\": \"ok\", \"message\": \"✅ Standup posted to your personal DM or test channel.\", \"timestamp\": \"{{ $now.toISO() }}\"}",
+        "options": {}
+      },
+      "id": "node-webhook-response",
+      "name": "Webhook Response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [1340, 700]
+    }
+  ],
+  "connections": {
+    "Schedule Trigger (9AM Weekdays)": {
+      "main": [
+        [
+          { "node": "GitHub: Get Commits (24h)", "type": "main", "index": 0 },
+          { "node": "Redmine: Get Issues Today", "type": "main", "index": 0 },
+          { "node": "Slack: Get Today's Messages", "type": "main", "index": 0 },
+          { "node": "Gmail: Get Recent Emails (Optional)", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "Chat Trigger (Manual)": {
+      "main": [
+        [
+          { "node": "GitHub: Get Commits (24h)", "type": "main", "index": 0 },
+          { "node": "Redmine: Get Issues Today", "type": "main", "index": 0 },
+          { "node": "Slack: Get Today's Messages", "type": "main", "index": 0 },
+          { "node": "Gmail: Get Recent Emails (Optional)", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "Webhook: MCP Entry (run_standup_workflow)": {
+      "main": [
+        [
+          { "node": "GitHub: Get Commits (24h)", "type": "main", "index": 0 },
+          { "node": "Redmine: Get Issues Today", "type": "main", "index": 0 },
+          { "node": "Slack: Get Today's Messages", "type": "main", "index": 0 },
+          { "node": "Gmail: Get Recent Emails (Optional)", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "GitHub: Get Commits (24h)": {
+      "main": [
+        [
+          { "node": "Code: Merge & Deduplicate Sources", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "Redmine: Get Issues Today": {
+      "main": [
+        [
+          { "node": "Code: Merge & Deduplicate Sources", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "Slack: Get Today's Messages": {
+      "main": [
+        [
+          { "node": "Code: Merge & Deduplicate Sources", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "Gmail: Get Recent Emails (Optional)": {
+      "main": [
+        [
+          { "node": "Code: Merge & Deduplicate Sources", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "Code: Merge & Deduplicate Sources": {
+      "main": [
+        [
+          { "node": "Claude Code CLI: Generate Standup", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "Claude Code CLI: Generate Standup": {
+      "main": [
+        [
+          { "node": "Slack: Post Standup to DM", "type": "main", "index": 0 },
+          { "node": "Webhook Response", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "Window Buffer Memory": {
+      "ai_memory": [
+        [
+          { "node": "Claude Code CLI: Generate Standup", "type": "ai_memory", "index": 0 }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "saveManualExecutions": true,
+    "callerPolicy": "workflowsFromSameOwner",
+    "errorWorkflow": ""
+  },
+  "staticData": null,
+  "meta": {
+    "templateCredsSetupCompleted": false,
+    "instanceId": "standup-bot-week3"
+  },
+  "pinData": {},
+  "versionId": "week3-v1",
+  "triggerCount": 3,
+  "tags": [
+    {
+      "createdAt": "2026-06-09T00:00:00.000Z",
+      "updatedAt": "2026-06-09T00:00:00.000Z",
+      "id": "tag-week3",
+      "name": "week3-exercise"
+    }
+  ]
+}

@@ -1,4 +1,4 @@
-FROM debian:bookworm-slim
+FROM debian:trixie-slim
 
 # Install Node.js LTS and essential tools
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -12,6 +12,14 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 # Install Claude Code CLI globally
 RUN npm install -g @anthropic-ai/claude-code
+
+# Create non-root user so --dangerously-skip-permissions works
+RUN useradd -m -s /bin/bash claude && \
+    mkdir -p /home/claude/.claude /workspace && \
+    chown -R claude:claude /home/claude /workspace
+
+USER claude
+ENV HOME=/home/claude
 
 # Create workspace directory
 WORKDIR /workspace
