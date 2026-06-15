@@ -1,0 +1,365 @@
+{
+  "name": "Daily Standup Generator (Claude Code CLI)",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 9 * * *"
+            }
+          ]
+        }
+      },
+      "id": "schedule-trigger",
+      "name": "Daily 9am Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -640,
+        320
+      ]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "=https://api.github.com/repos/{{ $vars.GITHUB_OWNER }}/{{ $vars.GITHUB_REPO }}/commits",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "since",
+              "value": "={{ $now.minus({ hours: 24 }).toISO() }}"
+            },
+            {
+              "name": "author",
+              "value": "={{ $vars.GITHUB_USERNAME }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "http-github",
+      "name": "GitHub Commits (24h)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -320,
+        -40
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "REPLACE_GITHUB_HEADER_AUTH_ID",
+          "name": "GitHub Bearer Token (Authorization header)"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "=https://{{ $vars.REDMINE_HOST }}/issues.json",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "assigned_to_id",
+              "value": "me"
+            },
+            {
+              "name": "updated_on",
+              "value": "=>={{ $today.toISODate() }}T00:00:00Z"
+            },
+            {
+              "name": "status_id",
+              "value": "*"
+            },
+            {
+              "name": "limit",
+              "value": "100"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "http-redmine",
+      "name": "Redmine Issues (today)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -320,
+        160
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "REPLACE_REDMINE_HEADER_AUTH_ID",
+          "name": "Redmine API Key (X-Redmine-API-Key header)"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "channel",
+        "operation": "history",
+        "channelId": {
+          "__rl": true,
+          "value": "REPLACE_SLACK_CHANNEL_ID",
+          "mode": "id"
+        },
+        "returnAll": false,
+        "limit": 50,
+        "filters": {
+          "oldest": "={{ $today.toSeconds() }}"
+        }
+      },
+      "id": "slack-read",
+      "name": "Slack Messages (today)",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.3,
+      "position": [
+        -320,
+        360
+      ],
+      "credentials": {
+        "slackApi": {
+          "id": "REPLACE_SLACK_API_ID",
+          "name": "Slack API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "message",
+        "operation": "getAll",
+        "returnAll": false,
+        "limit": 25,
+        "filters": {
+          "receivedAfter": "={{ $today.toISO() }}"
+        },
+        "options": {}
+      },
+      "id": "gmail-read",
+      "name": "Gmail Messages (today) [Optional]",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        -320,
+        560
+      ],
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "REPLACE_GMAIL_OAUTH2_ID",
+          "name": "Gmail OAuth2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "numberInputs": 4
+      },
+      "id": "merge-sources",
+      "name": "Merge All Sources",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3,
+      "position": [
+        40,
+        320
+      ]
+    },
+    {
+      "parameters": {
+        "jsExecutionMode": "runOnceForAllItems",
+        "jsCode": "// Normalize every source into a common shape, then de-duplicate.\n// Each incoming item is identified by which node produced it.\n\nconst out = [];\nconst seen = new Set();\n\nfor (const item of $input.all()) {\n  const j = item.json || {};\n  const src = item.source?.previousNode || '';\n  let normalized;\n\n  if (j.sha) {\n    // GitHub commit\n    normalized = {\n      source: 'github',\n      id: j.sha,\n      title: (j.commit?.message || '').split('\\n')[0],\n      author: j.commit?.author?.name || j.author?.login || '',\n      timestamp: j.commit?.author?.date || '',\n      url: j.html_url || '',\n    };\n  } else if (j.subject !== undefined && j.tracker !== undefined) {\n    // Redmine issue\n    normalized = {\n      source: 'redmine',\n      id: `redmine-${j.id}`,\n      title: `#${j.id} ${j.subject}`,\n      status: j.status?.name || '',\n      timestamp: j.updated_on || '',\n      url: '',\n    };\n  } else if (j.ts && (j.text !== undefined)) {\n    // Slack message\n    normalized = {\n      source: 'slack',\n      id: `slack-${j.ts}`,\n      title: (j.text || '').slice(0, 200),\n      author: j.user || '',\n      timestamp: j.ts || '',\n      url: '',\n    };\n  } else if (j.id && (j.snippet !== undefined || j.payload !== undefined)) {\n    // Gmail message\n    const headers = j.payload?.headers || [];\n    const getH = (n) => (headers.find((h) => h.name === n)?.value || '');\n    normalized = {\n      source: 'gmail',\n      id: `gmail-${j.id}`,\n      title: getH('Subject') || (j.snippet || '').slice(0, 120),\n      author: getH('From'),\n      timestamp: getH('Date'),\n      url: '',\n    };\n  } else {\n    // Unknown shape — keep raw for safety\n    normalized = {\n      source: src || 'unknown',\n      id: JSON.stringify(j).slice(0, 64),\n      title: '',\n      timestamp: '',\n    };\n  }\n\n  const key = `${normalized.source}:${normalized.id}`;\n  if (seen.has(key)) continue;\n  seen.add(key);\n  out.push(normalized);\n}\n\n// Group into a single payload so Claude gets one consolidated item\nconst grouped = {\n  date: $today.toISODate(),\n  counts: out.reduce((acc, x) => { acc[x.source] = (acc[x.source] || 0) + 1; return acc; }, {}),\n  github: out.filter((x) => x.source === 'github'),\n  redmine: out.filter((x) => x.source === 'redmine'),\n  slack: out.filter((x) => x.source === 'slack'),\n  gmail: out.filter((x) => x.source === 'gmail'),\n};\n\nreturn [{ json: grouped }];\n"
+      },
+      "id": "code-dedup",
+      "name": "Normalize & Dedupe",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        300,
+        320
+      ]
+    },
+    {
+      "parameters": {
+        "connectionMode": "local",
+        "operation": "executePrompt",
+        "prompt": "=You are my personal stand-up assistant. Below is my consolidated activity for {{ $json.date }} as JSON.\n\nWrite a concise daily stand-up update in Slack mrkdwn with exactly three sections:\n*:white_check_mark: Yesterday* — what I worked on (derive from GitHub commits and Redmine issue updates)\n*:dart: Today* — what I plan to work on (infer from in-progress / recently updated Redmine issues)\n*:warning: Blockers* — anything that looks blocked or needs attention (flag stalled issues or unanswered Slack threads)\n\nRules:\n- Use bullet points. Keep it under 12 bullets total.\n- Reference issue numbers and commit subjects where relevant.\n- If a section has nothing, write \"_Nothing to report_\".\n- Output ONLY the stand-up text, no preamble.\n\nActivity JSON:\n{{ JSON.stringify($json, null, 2) }}",
+        "permissionMode": "plan",
+        "model": "sonnet",
+        "options": {
+          "outputFormat": "json",
+          "timeout": 300,
+          "maxTurns": 5,
+          "effort": "medium"
+        }
+      },
+      "id": "claude-code",
+      "name": "Claude Code: Standup",
+      "type": "n8n-nodes-claude-code-cli.claudeCode",
+      "typeVersion": 1,
+      "position": [
+        560,
+        320
+      ],
+      "credentials": {
+        "claudeCodeLocalApi": {
+          "id": "REPLACE_CLAUDE_CODE_LOCAL_ID",
+          "name": "Claude Code Local"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "message",
+        "operation": "post",
+        "select": "user",
+        "user": {
+          "__rl": true,
+          "value": "REPLACE_YOUR_SLACK_USER_ID",
+          "mode": "id"
+        },
+        "text": "={{ $json.output }}",
+        "otherOptions": {
+          "mrkdwn": true
+        }
+      },
+      "id": "slack-post",
+      "name": "Post Standup to DM",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.3,
+      "position": [
+        860,
+        320
+      ],
+      "credentials": {
+        "slackApi": {
+          "id": "REPLACE_SLACK_API_ID",
+          "name": "Slack API"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Daily 9am Trigger": {
+      "main": [
+        [
+          {
+            "node": "GitHub Commits (24h)",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Redmine Issues (today)",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Slack Messages (today)",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Gmail Messages (today) [Optional]",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GitHub Commits (24h)": {
+      "main": [
+        [
+          {
+            "node": "Merge All Sources",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Redmine Issues (today)": {
+      "main": [
+        [
+          {
+            "node": "Merge All Sources",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Slack Messages (today)": {
+      "main": [
+        [
+          {
+            "node": "Merge All Sources",
+            "type": "main",
+            "index": 2
+          }
+        ]
+      ]
+    },
+    "Gmail Messages (today) [Optional]": {
+      "main": [
+        [
+          {
+            "node": "Merge All Sources",
+            "type": "main",
+            "index": 3
+          }
+        ]
+      ]
+    },
+    "Merge All Sources": {
+      "main": [
+        [
+          {
+            "node": "Normalize & Dedupe",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize & Dedupe": {
+      "main": [
+        [
+          {
+            "node": "Claude Code: Standup",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Claude Code: Standup": {
+      "main": [
+        [
+          {
+            "node": "Post Standup to DM",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "active": false,
+  "pinData": {},
+  "meta": {
+    "templatecredsSetupCompleted": false
+  },
+  "tags": [
+    {
+      "name": "standup"
+    }
+  ]
+}
