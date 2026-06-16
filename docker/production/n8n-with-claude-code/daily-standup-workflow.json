@@ -1,0 +1,363 @@
+{
+  "name": "Daily Standup Generator (Claude Code CLI)",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 9 * * *"
+            }
+          ]
+        }
+      },
+      "id": "eb9daebb-57da-40c2-a230-9827af82c181",
+      "name": "Daily 9am Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        544,
+        352
+      ]
+    },
+    {
+      "parameters": {
+        "url": "https://api.github.com/repos/Baoan-zigexn/n8n-nodes-claude-code-cli/commits",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "since",
+              "value": "={{ $now.minus({ hours: 24 }).toISO() }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "1715d955-c579-450b-a5bd-aaba22de3423",
+      "name": "GitHub Commits (24h)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        864,
+        -16
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "BuUQ19qj9cNikqd7",
+          "name": "Header Auth account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "https://dev.zigexn.vn/issues.json",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "assigned_to_id",
+              "value": "me"
+            },
+            {
+              "name": "status_id",
+              "value": "*"
+            },
+            {
+              "name": "limit",
+              "value": "100"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "fa44cf25-491c-4822-b877-cfdd6f65bec2",
+      "name": "Redmine Issues (today)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        864,
+        192
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "BuUQ19qj9cNikqd7",
+          "name": "Header Auth account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "channel",
+        "operation": "history",
+        "channelId": {
+          "__rl": true,
+          "value": "C0BARJ4RKV4",
+          "mode": "id"
+        },
+        "filters": {}
+      },
+      "id": "8b8f8773-f518-45dc-92f5-b86b63975416",
+      "name": "Slack Messages (today)",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.3,
+      "position": [
+        864,
+        400
+      ],
+      "webhookId": "b5cafb40-a38c-45be-89f8-70939df646cf",
+      "credentials": {
+        "slackApi": {
+          "id": "fMvDiHAw9TSb9rz6",
+          "name": "Slack account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "numberInputs": 3
+      },
+      "id": "86c9665a-086e-4ee2-8164-5a87a3f0524b",
+      "name": "Merge All Sources",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3,
+      "position": [
+        1232,
+        352
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const out = [];\nconst seen = new Set();\n\nfor (const item of $input.all()) {\n  const j = item.json || {};\n  let normalized;\n\n  if (j.sha) {\n    normalized = { source: 'github', id: j.sha, title: (j.commit?.message || '').split('\\n')[0], author: j.commit?.author?.name || '', timestamp: j.commit?.author?.date || '' };\n  } else if (j.subject !== undefined && j.tracker !== undefined) {\n    normalized = { source: 'redmine', id: `redmine-${j.id}`, title: `#${j.id} ${j.subject}`, status: j.status?.name || '', timestamp: j.updated_on || '' };\n  } else if (j.ts && j.text !== undefined) {\n    normalized = { source: 'slack', id: `slack-${j.ts}`, title: (j.text || '').slice(0, 200), author: j.user || '', timestamp: j.ts || '' };\n  } else {\n    normalized = { source: 'unknown', id: JSON.stringify(j).slice(0, 64), title: '', timestamp: '' };\n  }\n\n  const key = `${normalized.source}:${normalized.id}`;\n  if (seen.has(key)) continue;\n  seen.add(key);\n  out.push(normalized);\n}\n\nconst grouped = {\n  date: $today.toISODate(),\n  github: out.filter(x => x.source === 'github'),\n  redmine: out.filter(x => x.source === 'redmine'),\n  slack: out.filter(x => x.source === 'slack'),\n};\n\nreturn [{ json: grouped }];"
+      },
+      "id": "6fa026c4-7ac7-49b8-97c7-8bea009f4f2b",
+      "name": "Normalize & Dedupe",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1488,
+        352
+      ]
+    },
+    {
+      "parameters": {
+        "connectionMode": "docker",
+        "prompt": "=You are my personal stand-up assistant. Below is my consolidated activity for {{ $json.date }}.\n\nWrite a concise daily stand-up with three sections:\n*Yesterday* — what I worked on\n*Today* — what I plan to work on\n*Blockers* — anything blocked\n\nActivity:\n{{ JSON.stringify($json, null, 2) }}",
+        "toolPermissions": {},
+        "agents": {
+          "agentsList": []
+        },
+        "mcpServers": {
+          "serversList": []
+        },
+        "options": {}
+      },
+      "id": "57bdc653-af15-46e2-8d59-1b204efed4b9",
+      "name": "Claude Code: Standup",
+      "type": "n8n-nodes-claude-code-cli.claudeCode",
+      "typeVersion": 1,
+      "position": [
+        1744,
+        352
+      ],
+      "credentials": {
+        "claudeCodeDockerApi": {
+          "id": "5vHX98ViPCDU2A1H",
+          "name": "Claude Code Local account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "select": "channel",
+        "channelId": {
+          "__rl": true,
+          "value": "C0BARJ4RKV4",
+          "mode": "id"
+        },
+        "text": "={{ $json.output || $json.result || JSON.stringify($json) }}",
+        "otherOptions": {
+          "mrkdwn": true
+        }
+      },
+      "id": "346d7bc6-c96e-4c08-8ca7-38b4de8d5708",
+      "name": "Post Standup to Slack1",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.3,
+      "position": [
+        2048,
+        352
+      ],
+      "webhookId": "8a49cd0f-ccfc-493b-9477-1153ae2f4f72",
+      "credentials": {
+        "slackApi": {
+          "id": "fMvDiHAw9TSb9rz6",
+          "name": "Slack account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "path": "run_standup_workflow",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        528,
+        528
+      ],
+      "id": "6b91b0f0-545c-4ac2-8969-9646dcca16fc",
+      "name": "Webhook",
+      "webhookId": "1c00baf2-effd-41f8-a4a0-b4739cb9b3ca"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Daily 9am Trigger": {
+      "main": [
+        [
+          {
+            "node": "GitHub Commits (24h)",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Redmine Issues (today)",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Slack Messages (today)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GitHub Commits (24h)": {
+      "main": [
+        [
+          {
+            "node": "Merge All Sources",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Redmine Issues (today)": {
+      "main": [
+        [
+          {
+            "node": "Merge All Sources",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Slack Messages (today)": {
+      "main": [
+        [
+          {
+            "node": "Merge All Sources",
+            "type": "main",
+            "index": 2
+          }
+        ]
+      ]
+    },
+    "Merge All Sources": {
+      "main": [
+        [
+          {
+            "node": "Normalize & Dedupe",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize & Dedupe": {
+      "main": [
+        [
+          {
+            "node": "Claude Code: Standup",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Claude Code: Standup": {
+      "main": [
+        [
+          {
+            "node": "Post Standup to Slack1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Merge All Sources",
+            "type": "main",
+            "index": 1
+          },
+          {
+            "node": "GitHub Commits (24h)",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Redmine Issues (today)",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Slack Messages (today)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": true
+  },
+  "versionId": "b4764371-1eb2-466f-92a5-d9935c992afc",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "14f8eea05463e810fa5a84f385da4a3156394147f988ff9239d089c4ea4f4519"
+  },
+  "nodeGroups": [],
+  "id": "bLi90Lot7r7nGtGK",
+  "tags": [
+    {
+      "updatedAt": "2026-06-16T02:22:51.368Z",
+      "createdAt": "2026-06-16T02:22:51.368Z",
+      "id": "2OBWEM4To33OeCH0",
+      "name": "daily"
+    },
+    {
+      "updatedAt": "2026-06-16T02:22:51.362Z",
+      "createdAt": "2026-06-16T02:22:51.362Z",
+      "id": "Rt7lVBwenqTAs1ud",
+      "name": "standup"
+    }
+  ]
+}
