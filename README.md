@@ -1,17 +1,10 @@
 <div align="center">
 
-```
-   _____ _                 _         _____          _
-  / ____| |               | |       / ____|        | |
- | |    | | __ _ _   _  __| | ___  | |     ___   __| | ___
- | |    | |/ _` | | | |/ _` |/ _ \ | |    / _ \ / _` |/ _ \
- | |____| | (_| | |_| | (_| |  __/ | |___| (_) | (_| |  __/
-  \_____|_|\__,_|\__,_|\__,_|\___|  \_____\___/ \__,_|\___|
-
-           ⚡ for n8n ⚡
-```
-
-# n8n-nodes-claude-code-cli
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/ThomasTartrau/n8n-nodes-claude-code-cli/main/assets/logo/claude-code-cli-logo-dark.png">
+  <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/ThomasTartrau/n8n-nodes-claude-code-cli/main/assets/logo/claude-code-cli-logo-light.png">
+  <img alt="n8n-nodes-claude-code-cli" src="https://raw.githubusercontent.com/ThomasTartrau/n8n-nodes-claude-code-cli/main/assets/logo/claude-code-cli-banner.png" width="560">
+</picture>
 
 [![CI](https://img.shields.io/github/actions/workflow/status/ThomasTartrau/n8n-nodes-claude-code-cli/ci.yml?style=for-the-badge&logo=github&label=CI)](https://github.com/ThomasTartrau/n8n-nodes-claude-code-cli/actions/workflows/ci.yml)
 [![npm](https://img.shields.io/npm/v/n8n-nodes-claude-code-cli?style=for-the-badge&logo=npm&logoColor=white)](https://www.npmjs.com/package/n8n-nodes-claude-code-cli)

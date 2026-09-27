@@ -3,7 +3,7 @@ import type { ICredentialType, INodeProperties, Icon } from "n8n-workflow";
 export class ClaudeCodeDockerApi implements ICredentialType {
 	name = "claudeCodeDockerApi";
 	displayName = "Claude Code Docker";
-	icon: Icon = "file:../icons/claudecode.svg";
+	icon: Icon = "file:../icons/claude-code-cli.svg";
 	documentationUrl =
 		"https://github.com/ThomasTartrau/n8n-nodes-claude-code-cli";
 

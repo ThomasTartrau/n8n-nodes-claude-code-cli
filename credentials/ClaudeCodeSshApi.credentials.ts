@@ -3,7 +3,7 @@ import type { ICredentialType, INodeProperties, Icon } from "n8n-workflow";
 export class ClaudeCodeSshApi implements ICredentialType {
 	name = "claudeCodeSshApi";
 	displayName = "Claude Code SSH";
-	icon: Icon = "file:../icons/claudecode.svg";
+	icon: Icon = "file:../icons/claude-code-cli.svg";
 	documentationUrl =
 		"https://github.com/ThomasTartrau/n8n-nodes-claude-code-cli";
 
