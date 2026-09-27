@@ -24,15 +24,15 @@ outside: the node's output. Signal yellow with an ink C, on every background.
 ### README (GitHub and npm)
 
 The root `README.md` uses the header below. GitHub picks the light or dark logo from the viewer's
-theme. The URLs are absolute because npm renders the README from the published package, which
-only ships `dist/`; they resolve once the files are on `main`. If a renderer strips `<picture>`,
-the `<img>` fallback shows the banner, which reads on both themes.
+theme. The paths are relative to the repository root, so the logos resolve from the checked-out
+branch. If a renderer strips `<picture>`, the `<img>` fallback shows the banner, which reads on
+both themes.
 
 ```html
 <picture>
-  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/ThomasTartrau/n8n-nodes-claude-code-cli/main/assets/logo/claude-code-cli-logo-dark.png">
-  <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/ThomasTartrau/n8n-nodes-claude-code-cli/main/assets/logo/claude-code-cli-logo-light.png">
-  <img alt="n8n-nodes-claude-code-cli" src="https://raw.githubusercontent.com/ThomasTartrau/n8n-nodes-claude-code-cli/main/assets/logo/claude-code-cli-banner.png" width="560">
+  <source media="(prefers-color-scheme: dark)" srcset="./assets/logo/claude-code-cli-logo-dark.png">
+  <source media="(prefers-color-scheme: light)" srcset="./assets/logo/claude-code-cli-logo-light.png">
+  <img alt="n8n-nodes-claude-code-cli" src="./assets/logo/claude-code-cli-banner.png" width="560">
 </picture>
 ```
 

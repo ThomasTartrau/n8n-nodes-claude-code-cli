@@ -1,9 +1,9 @@
 <div align="center">
 
 <picture>
-  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/ThomasTartrau/n8n-nodes-claude-code-cli/main/assets/logo/claude-code-cli-logo-dark.png">
-  <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/ThomasTartrau/n8n-nodes-claude-code-cli/main/assets/logo/claude-code-cli-logo-light.png">
-  <img alt="n8n-nodes-claude-code-cli" src="https://raw.githubusercontent.com/ThomasTartrau/n8n-nodes-claude-code-cli/main/assets/logo/claude-code-cli-banner.png" width="560">
+  <source media="(prefers-color-scheme: dark)" srcset="./assets/logo/claude-code-cli-logo-dark.png">
+  <source media="(prefers-color-scheme: light)" srcset="./assets/logo/claude-code-cli-logo-light.png">
+  <img alt="n8n-nodes-claude-code-cli" src="./assets/logo/claude-code-cli-banner.png" width="560">
 </picture>
 
 [![CI](https://img.shields.io/github/actions/workflow/status/ThomasTartrau/n8n-nodes-claude-code-cli/ci.yml?style=for-the-badge&logo=github&label=CI)](https://github.com/ThomasTartrau/n8n-nodes-claude-code-cli/actions/workflows/ci.yml)
