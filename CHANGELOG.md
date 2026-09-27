@@ -1,3 +1,10 @@
+# [1.11.0](https://github.com/ThomasTartrau/n8n-nodes-claude-code-cli/compare/v1.10.0...v1.11.0) (2026-09-27)
+
+
+### Features
+
+* add new logo and replace node and credential icons ([203d694](https://github.com/ThomasTartrau/n8n-nodes-claude-code-cli/commit/203d6942043f8ac2720250d23cdc53e20e6f5c57))
+
 # [1.10.0](https://github.com/ThomasTartrau/n8n-nodes-claude-code-cli/compare/v1.9.0...v1.10.0) (2026-08-10)
 
 
