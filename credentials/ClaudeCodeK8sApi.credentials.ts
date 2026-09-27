@@ -4,7 +4,7 @@ import { k8sSharedProperties } from "./k8sSharedProperties.js";
 export class ClaudeCodeK8sApi implements ICredentialType {
 	name = "claudeCodeK8sApi";
 	displayName = "Claude Code K8s Ephemeral";
-	icon: Icon = "file:../icons/claudecode.svg";
+	icon: Icon = "file:../icons/claude-code-cli.svg";
 	documentationUrl =
 		"https://github.com/ThomasTartrau/n8n-nodes-claude-code-cli";
 

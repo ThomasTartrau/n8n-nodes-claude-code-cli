@@ -36,7 +36,7 @@ export class ClaudeCode implements INodeType {
 	description: INodeTypeDescription = {
 		displayName: "Claude Code",
 		name: "claudeCode",
-		icon: "file:../../icons/claudecode.svg",
+		icon: "file:../../icons/claude-code-cli.svg",
 		group: ["transform"],
 		version: 1.0,
 		subtitle: '={{$parameter["operation"]}}',
